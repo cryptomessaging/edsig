@@ -14,7 +14,7 @@
         "Cryptomessaging"
     ],
     "author": "Mike Prince",
-    "license": "ISC",
+    "license": "GPL-3.0-or-later",
     "dependencies": {
         "commander": "^2.15.1",
         "request": "^2.86.0",
