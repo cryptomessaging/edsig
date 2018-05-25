@@ -3,7 +3,7 @@ const { randomBytes } = require('crypto')
 const EdDSA = require('elliptic').eddsa
 const ec = new EdDSA('ed25519')
 
-const DEBUG = true;
+const DEBUG = false;
 
 module.exports = {
     keypairFromSecret: keypairFromSecret,
@@ -24,18 +24,19 @@ function keypairFromSecret(secret) {
 // Authorization is used to verify who is making an HTTP request
 //
 
-// req { body:, method:, originalUrl:, headers: }
+// path
+// req { body:Buffer, method:, headers: }
 // returns null OR { type:'edsig', pid:<base64url> })
 // throws Error on signature failure
-function verifyRequestSignature(req) {
+function verifyRequestSignature(path,req) {
     // crack open the authorization header to get the public key and signature
     let authorization = parseSignature(req.headers,'authorization');
     if(!authorization)
         return;  // it's ok!
 
     // verify specific EdSig request headers and CRC32C of body (if present)
-    let reqbytes = reqSummaryToBytes( req );
-    let success = authorization.pubkey.verify(reqbytes, authorization.sighex);
+    let summaryBytes = reqSummaryToBytes( path, req );
+    let success = authorization.pubkey.verify(summaryBytes, authorization.sighex);
 
     if( DEBUG) console.log( 'Verified?', success );
     if( success )
@@ -45,16 +46,12 @@ function verifyRequestSignature(req) {
 }
 
 // convert HTTP request to a Buffer
-// req { body:, method:, originalUrl:, headers: }
-function reqSummaryToBytes(req) {
+// path
+// req { body:Buffer, method:, headers: }
+function reqSummaryToBytes(path,req) {
 
+    // Some systems don't pass through the content length...
     ensureContentLengthHeader(req.headers,req.body);
-
-    // do a crc32c of the body and add to request
-    if( !req.headers['x-content-hash'] ) {
-        const bodyHash = crc32c.calculate( req.body );
-        req.headers['x-content-hash'] = 'CRC32C ' + bodyHash.toString(16);
-    }
 
     // message is "METHOD path\nheader1value\nheader2value\n...header3value"  (NOTE: NO trailing \n)
     const signHeaders = [
@@ -63,7 +60,7 @@ function reqSummaryToBytes(req) {
         'date',
         'host',
         'x-content-hash' ];     // order is important!
-    let message = req.method + ' ' + req.originalUrl;
+    let message = req.method + ' ' + path;
     signHeaders.forEach(name => {
         let value = req.headers[name] || '';
         message += '\n' + value;
@@ -85,16 +82,21 @@ function ensureContentLengthHeader(headers,body) {
 }
 
 // Create an authorization header value from the given Node Request object and an EC keypair
-// req { body:, method:, originalUrl:, headers: }
+// path - pathname[?querystring]
+// req { body:Buffer, method:, headers: }
 // keypair is elliptic keypair
 // Keypath is <pid>[@host1[,host2]...][:subkey]
-function createAuthorization( req, keypair, keypath ) {
+function createAuthorization( path, req, keypair, keypath ) {
+    // do a crc32c of the body and add to request
+    const bodyHash = crc32c.calculate( req.body );
+    req.headers['x-content-hash'] = 'CRC32C ' + bodyHash.toString(16);
+
     // Convert request summary to bytes and sign
-    var msg = reqSummaryToBytes( req );
-    var sigbytes = Buffer.from( keypair.sign(msg).toBytes() );
+    var summaryBytes = reqSummaryToBytes( path, req );
+    var sigbytes = Buffer.from( keypair.sign(summaryBytes).toBytes() );
 
     if( !keypath ) {
-        // extract public key bytes
+        // extract public key bytes to make a simple <pid> path
         let pubbytes = Buffer.from( keypair.getPublic() );
         keypath = base64url(pubbytes);
     }
@@ -104,27 +106,22 @@ function createAuthorization( req, keypair, keypath ) {
     return edsig;
 }
 
-function addAuthorization( req, keypair, keypath ) {
-    req.headers.authorization = createAuthorization( req, keypair, keypath );
+function addAuthorization( path, req, keypair, keypath ) {
+    req.headers.authorization = createAuthorization( path, req, keypair, keypath );
 }
 
 //
 // Certification is provided by the owner of content
 //
 
-// pathname is from http://hostname/<pathname>?querystring...
-// req = { body:, headers: }
+// path of request, WILL be used for verification if the x-content-path was specified
+// req = { body:Buffer, headers: }
 // returns { type:'edsig', pid: }
-function verifyContentSignature(pathname,req) {
+function verifyContentSignature(path,req) {
     let body = req.body;
-    let headers = {
-        "content-type": req.headers['content-type'],
-        "x-created": req.headers['x-created']
-    };
-    if( req.headers['content-length'] )
-        headers['content-length'] = req.headers['content-length'];
-    
-    let contentbytes = contentSummaryToBytes( pathname, body, headers );
+    let headers = copyHeaders(req.headers,['content-type','x-created','content-length','x-content-hash',
+        'x-content-path']);
+    let summaryBytes = contentSummaryToBytes( headers, body );
 
     // crack open the certification header to get the public key and signature
     let certification = parseSignature(req.headers,'x-certification');
@@ -132,7 +129,7 @@ function verifyContentSignature(pathname,req) {
         throw new CodedError([4],'Missing required header: X-Certification' );
 
     // verify specific EdSig request headers and CRC32C of body (if present)
-    let success = certification.pubkey.verify(contentbytes, certification.sighex);
+    let success = certification.pubkey.verify(summaryBytes, certification.sighex);
 
     if( DEBUG) console.log( 'Certified?', success );
     if( success )
@@ -141,13 +138,40 @@ function verifyContentSignature(pathname,req) {
         throw new CodedError([4],'EdSig certification check failed' );
 }
 
-// convert content summary(CRC of body,headers,path) to byte Buffer
-// headers { content-length, content-type, x-created }
-function contentSummaryToBytes(pathname,body,headers) {
-    if( DEBUG ) console.log( 'contentSummaryToBytes()', pathname, body, headers );
+function copyHeaders(src,names) {
+    let result = {};
+    names.forEach( n => {
+        if( src[n] ) result[n] = src[n];
+    });
+    return result;
+}
 
+
+// headers { content-length:, content-type:, x-created:, x-content-hash:,x-content-path }
+// body: Buffer
+function contentSummaryToBytes(headers,body) {
+    // Seems Lambda doesn't pass this through... so make sure we have it
     ensureContentLengthHeader(headers,body);
 
+    // message is "header1value\nheader2value\n...header3value"  (NOTE: NO trailing \n)
+    const signHeaders = [
+        //'content-length',
+        'content-type',
+        'x-created',
+        'x-content-hash',
+        'x-content-path' ];     // order is important!
+    let message = headers['content-length'];
+    signHeaders.forEach(name => {
+        let value = headers[name] || '';
+        message += '\n' + value;
+    });
+
+    if( DEBUG ) console.log( 'contentSummaryToBytes()', headers, message );
+    return Buffer.from( message );
+}
+
+// keypath is optional
+function createCertification( contentPath, body, headers, keypair, keypath ) {
     // do a crc32c of the body and add to request
     if( !headers['x-content-hash'] ) {
         const bodyHash = crc32c.calculate( body );
@@ -157,29 +181,12 @@ function contentSummaryToBytes(pathname,body,headers) {
     if( !headers['x-created'] )
         headers['x-created'] = (new Date()).toISOString();
 
-    // IMPORTANT to anchor the content to a place in the filesystem
-    // message is "pathname\nheader1value\nheader2value\n...header3value"  (NOTE: NO trailing \n)
-    const signHeaders = [
-        'content-length',
-        'content-type',
-        'x-created',
-        'x-content-hash' ];     // order is important!
-    let message = pathname;
-    signHeaders.forEach(name => {
-        let value = headers[name] || '';
-        message += '\n' + value;
-    });
+    if( contentPath )
+        headers['x-content-path'] = contentPath;
 
-    if( DEBUG ) console.log( 'contentSummaryToBytes()', message );
-    return Buffer.from( message );
-}
-
-// keypath is optional
-function createCertification( pathname, body, headers, keypair, keypath ) {
-    //console.log( 'createCertification()', pathname, body, headers );
     // Convert request to bytes and sign
-    var msg = contentSummaryToBytes( pathname, body, headers );
-    var sigbytes = Buffer.from( keypair.sign(msg).toBytes() );
+    let summaryBytes = contentSummaryToBytes( headers, body );
+    let sigbytes = Buffer.from( keypair.sign(summaryBytes).toBytes() );
 
     if( !keypath ) {
         // extract public key bytes
@@ -192,13 +199,13 @@ function createCertification( pathname, body, headers, keypair, keypath ) {
     return edcert;
 }
 
-// pathname is from http://hostname/<pathname>?querystring...
-// req { body:, headers: }
+// contentPath - optional path to anchor content within url
+// req { body:Buffer, headers: }
 // keypair is required
 // keypath is optional
-// Modifies the req.headers by adding the x-certification header
-function addCertification( pathname, req, keypair, keypath ) {
-    req.headers['x-certification'] = createCertification( pathname, req.body, req.headers, keypair, keypath );
+// Modifies the req.headers by adding the x-certification header and other headers as necessary
+function addCertification( contentPath, req, keypair, keypath ) {
+    req.headers['x-certification'] = createCertification( contentPath, req.body, req.headers, keypair, keypath );
 }
 
 //
@@ -246,7 +253,6 @@ function base64url(buffer){
 
     // replace web/url unsafe characters and remove trailing '='
     const base64url = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/\=+$/, '');
-
     return base64url;
 }
 
@@ -273,10 +279,6 @@ function asKVset(s) {
 }
 
 //
-// Signals
-//
-
-//
 // Errors are coded with an integer array.  The leftmost/first number
 // is the most significant, with each subsequent number having less
 // significance.
@@ -297,34 +299,3 @@ function CodedError(code,message,details) {
     this.details = details;     // techie/support details, if any
 }
 require('util').inherits(CodedError, Error);
-
-/* Use this method when we DON'T have an Error object
-exports.signalNotOk = function(req,res,code,message,details) {
-    var err = { code:code, message:message, details:details };
-    log(req,code,err);
-    res.status(code[0]*100).json({failure:err});
-}
-
-// Use this method when we have an Error object
-exports.signalError = function(req,res,err) {
-    if( err instanceof ServerError && err.code ) {
-        log(req,err.code,err);
-        res.status( err.code[0]*100).json({failure:err});
-    } else {
-        log(req,500,err);
-        var failure = { code:500, message:err.toString() };
-        res.status( 500 ).json( {failure:failure} );
-    }
-}*/
-
-/*
-function log(req,code,err) {
-    const details = {
-        code:code,
-        url:req.originalUrl,
-        headers:req.headers,
-        auth:req.auth,
-        body:req.body    
-    }
-    console.log( new Date(), 'ERROR:', details, JSON.stringify(err) );
-}*/

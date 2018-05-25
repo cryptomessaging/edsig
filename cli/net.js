@@ -4,7 +4,7 @@ const edsig = require('../index')
 const util = require('./util')
 const storage = require('./storage')
 
-const DEBUG = false;
+const DEBUG = true;
 
 module.exports = {
     putPersonaFile: putPersonaFile,
@@ -37,7 +37,50 @@ async function putPersonaFile(pid,service,subPersonaPath,file,contentType) {
     let req = {
         body: file,
         method: 'POST',
-        originalUrl: url.pathname,
+        headers: {
+            "content-type": contentType.toLowerCase(),
+            "content-length": file.length,
+            host: determineHost(controllerUrl),
+            date: new Date().toISOString()
+        }
+    };
+    edsig.addAuthorization( url.pathname, req, keypair );
+    edsig.addCertification( null, req, keypair );
+
+    // post request to server
+    const options = {
+        method:'POST',
+        body: file,
+        url: url.href,
+        headers: req.headers
+    };
+    return httpRequest(options);
+}
+
+// pid - is root pid (for now, later a full keypath)
+// service - is the full service object from our local .cryptomessaging dir
+// relativePath - an OPTIONAL anchor point for this content
+// relative to the posters persona directory and CANNOT start with a slash.
+// file - a Buffer
+async function putFile(pid,service,relativePath,file,contentType) {
+
+    // RELATIVE (no leading slash) path under controller URL
+    //const viewpath = 'personas/' + pid + '/' + subPersonaPath;
+
+    // What is the base URL of the controller for this edge cache?
+    // (Requires trailing slash)
+    const controllerUrl = ensureTrailingSlash( service.service.controller.url );
+
+    // create HTTP request with both authorization and certification
+    // path MUST NOT have leading slash
+    const url = new URL( relativePath, controllerUrl );
+    if( DEBUG ) console.log( 'Created', url, 'from', path, controllerUrl );
+    const secrets = storage.loadPersonaSecrets( pid );
+    const keypair = edsig.keypairFromSecret( secrets.root.secret );
+    let req = {
+        body: file,
+        method: 'POST',
+        path: url.path,
         headers: {
             "content-type": contentType.toLowerCase(),
             "content-length": file.length,
@@ -46,7 +89,7 @@ async function putPersonaFile(pid,service,subPersonaPath,file,contentType) {
         }
     };
     edsig.addAuthorization( req, keypair );
-    edsig.addCertification( '/' + viewpath, req, keypair );
+    edsig.addCertification( req.path, req, keypair );
 
     // post request to server
     const options = {
