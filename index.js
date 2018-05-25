@@ -3,7 +3,7 @@ const { randomBytes } = require('crypto')
 const EdDSA = require('elliptic').eddsa
 const ec = new EdDSA('ed25519')
 
-const DEBUG = false;
+const DEBUG = true;
 
 module.exports = {
     keypairFromSecret: keypairFromSecret,
@@ -47,6 +47,9 @@ function verifyRequestSignature(req) {
 // convert HTTP request to a Buffer
 // req { body:, method:, originalUrl:, headers: }
 function reqSummaryToBytes(req) {
+
+    ensureContentLengthHeader(req.headers,req.body);
+
     // do a crc32c of the body and add to request
     if( !req.headers['x-content-hash'] ) {
         const bodyHash = crc32c.calculate( req.body );
@@ -66,8 +69,19 @@ function reqSummaryToBytes(req) {
         message += '\n' + value;
     });
 
-    if( DEBUG ) console.log( 'contentSummaryToBytes()', message );
+    if( DEBUG ) console.log( 'reqSummaryToBytes()', message );
     return Buffer.from( message );
+}
+
+// Amazon Lambda appears to not be passing in content-length, so
+// if it's missing, add it back in
+function ensureContentLengthHeader(headers,body) {
+    if( headers['content-length'] || !body )
+        return;
+
+    const length = body.length;
+    console.log( 'WARNING: headers missing content-length, adding length of ', length );
+    headers['content-length'] = length;
 }
 
 // Create an authorization header value from the given Node Request object and an EC keypair
@@ -104,10 +118,12 @@ function addAuthorization( req, keypair, keypath ) {
 function verifyContentSignature(pathname,req) {
     let body = req.body;
     let headers = {
-        "content-length": req.headers['content-length'],
         "content-type": req.headers['content-type'],
         "x-created": req.headers['x-created']
     };
+    if( req.headers['content-length'] )
+        headers['content-length'] = req.headers['content-length'];
+    
     let contentbytes = contentSummaryToBytes( pathname, body, headers );
 
     // crack open the certification header to get the public key and signature
@@ -129,6 +145,8 @@ function verifyContentSignature(pathname,req) {
 // headers { content-length, content-type, x-created }
 function contentSummaryToBytes(pathname,body,headers) {
     if( DEBUG ) console.log( 'contentSummaryToBytes()', pathname, body, headers );
+
+    ensureContentLengthHeader(headers,body);
 
     // do a crc32c of the body and add to request
     if( !headers['x-content-hash'] ) {

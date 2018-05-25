@@ -42,7 +42,7 @@ async function putPersonaFile(pid,service,subPersonaPath,file,contentType) {
             "content-type": contentType.toLowerCase(),
             "content-length": file.length,
             host: determineHost(controllerUrl),
-            date: new Date().toISOString(),
+            date: new Date().toISOString()
         }
     };
     edsig.addAuthorization( req, keypair );
@@ -68,9 +68,11 @@ function httpRequest(options) {
         request( options, (err,res,body) => {
             if(err)
                 reject(err);
-            else if( res.statusCode != 200 )
+            else if( res.statusCode != 200 ) {
+                if( body )
+                    console.log( 'Body for', options.url, 'code', res.statusCode, 'is', body );
                 reject( new Error('statusCode: ' + res.statusCode + ' for ' + options.url ) );
-            else
+            } else
                 resolve( {res:res, body:body} );
         });
     });
@@ -89,9 +91,11 @@ function fetchServiceInfo(baseViewUrl) {
         request( options, (err,res,body) => {
             if(err)
                 reject(err);
-            else if( res.statusCode != 200 )
+            else if( res.statusCode != 200 ) {
+                if( body )
+                    console.log( 'Body for', options.url, 'code', res.statusCode, 'is', body );
                 reject( new Error('statusCode: ' + res.statusCode + ' for ' + options.url ) );
-            else
+            } else
                 resolve( JSON.parse(body) );
         });
     });
