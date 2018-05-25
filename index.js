@@ -2,29 +2,32 @@ const crc32c = require('fast-crc32c')
 const { randomBytes } = require('crypto')
 const EdDSA = require('elliptic').eddsa
 const ec = new EdDSA('ed25519')
-const net = require('./net')
-const DEBUG = true;
+
+const DEBUG = false;
+
+module.exports = {
+    keypairFromSecret: keypairFromSecret,
+    verifyRequestSignature: verifyRequestSignature,
+    addAuthorization: addAuthorization,
+    verifyContentSignature: verifyContentSignature,
+    addCertification: addCertification,
+    base64url: base64url,
+    CodedError: CodedError
+};
 
 function keypairFromSecret(secret) {
     let buf = Buffer.from( secret, 'base64' );    // actually base64url
     return ec.keyFromSecret(buf);    
 }
-exports.keypairFromSecret = keypairFromSecret;
-
-// For testing...
-const TEST_KEYPAIR = keypairFromSecret("UG8HnBjdfbcxmCGgHkHAVGDezaOXXJAKZ222BU5_YLs");
 
 //
 // Authorization is used to verify who is making an HTTP request
 //
 
 // req { body:, method:, originalUrl:, headers: }
-// returns { type:'edsig', pid:<base64url> })
-exports.verifyRequestSignature = function(req) {
-
-    // For FUN (and testing), what would the sig be for the test user (created below)?
-    //createAuthorization( req, TEST_KEYPAIR );
-
+// returns null OR { type:'edsig', pid:<base64url> })
+// throws Error on signature failure
+function verifyRequestSignature(req) {
     // crack open the authorization header to get the public key and signature
     let authorization = parseSignature(req.headers,'authorization');
     if(!authorization)
@@ -38,14 +41,12 @@ exports.verifyRequestSignature = function(req) {
     if( success )
         return { type:'edsig', pid:authorization.keypath[0] };
     else
-        throw new net.ServerError([4],'EdSig authorization check failed' );
+        throw new CodedError([4],'EdSig authorization check failed' );
 }
 
 // convert HTTP request to a Buffer
 // req { body:, method:, originalUrl:, headers: }
 function reqSummaryToBytes(req) {
-
-    // TODO: Remove!  For testing...
     // do a crc32c of the body and add to request
     if( !req.headers['x-content-hash'] ) {
         const bodyHash = crc32c.calculate( req.body );
@@ -89,7 +90,7 @@ function createAuthorization( req, keypair, keypath ) {
     return edsig;
 }
 
-exports.addAuthorization = function( req, keypair, keypath ) {
+function addAuthorization( req, keypair, keypath ) {
     req.headers.authorization = createAuthorization( req, keypair, keypath );
 }
 
@@ -100,7 +101,7 @@ exports.addAuthorization = function( req, keypair, keypath ) {
 // pathname is from http://hostname/<pathname>?querystring...
 // req = { body:, headers: }
 // returns { type:'edsig', pid: }
-exports.verifyContentSignature = function(pathname,req) {
+function verifyContentSignature(pathname,req) {
     let body = req.body;
     let headers = {
         "content-length": req.headers['content-length'],
@@ -109,13 +110,10 @@ exports.verifyContentSignature = function(pathname,req) {
     };
     let contentbytes = contentSummaryToBytes( pathname, body, headers );
 
-    // For FUN, what should it be?
-    //createCertification( pathname, body, headers, TEST_KEYPAIR );
-
     // crack open the certification header to get the public key and signature
     let certification = parseSignature(req.headers,'x-certification');
     if(!certification)
-        throw new net.ServerError([4],'Missing required header: X-Certification' );
+        throw new CodedError([4],'Missing required header: X-Certification' );
 
     // verify specific EdSig request headers and CRC32C of body (if present)
     let success = certification.pubkey.verify(contentbytes, certification.sighex);
@@ -124,17 +122,19 @@ exports.verifyContentSignature = function(pathname,req) {
     if( success )
         return { type:'edsig', pid:certification.keypath[0] };
     else
-        throw new net.ServerError([4],'EdSig certification check failed' );
+        throw new CodedError([4],'EdSig certification check failed' );
 }
 
 // convert content summary(CRC of body,headers,path) to byte Buffer
 // headers { content-length, content-type, x-created }
 function contentSummaryToBytes(pathname,body,headers) {
-    console.log( 'contentSummaryToBytes()', pathname, body, headers );
+    if( DEBUG ) console.log( 'contentSummaryToBytes()', pathname, body, headers );
 
     // do a crc32c of the body and add to request
-    const bodyHash = crc32c.calculate( body );
-    headers['x-content-hash'] = 'CRC32C ' + bodyHash.toString(16);
+    if( !headers['x-content-hash'] ) {
+        const bodyHash = crc32c.calculate( body );
+        headers['x-content-hash'] = 'CRC32C ' + bodyHash.toString(16);
+    }
 
     if( !headers['x-created'] )
         headers['x-created'] = (new Date()).toISOString();
@@ -179,7 +179,7 @@ function createCertification( pathname, body, headers, keypair, keypath ) {
 // keypair is required
 // keypath is optional
 // Modifies the req.headers by adding the x-certification header
-exports.addCertification = function( pathname, req, keypair, keypath ) {
+function addCertification( pathname, req, keypair, keypath ) {
     req.headers['x-certification'] = createCertification( pathname, req.body, req.headers, keypair, keypath );
 }
 
@@ -231,7 +231,6 @@ function base64url(buffer){
 
     return base64url;
 }
-exports.base64url = base64url;
 
 function clean(y) {
     return y && trim(y);
@@ -254,3 +253,60 @@ function asKVset(s) {
 
     return result;
 }
+
+//
+// Signals
+//
+
+//
+// Errors are coded with an integer array.  The leftmost/first number
+// is the most significant, with each subsequent number having less
+// significance.
+//
+// The first number is designed to correspond to the major classes
+// of HTTP status codes:
+// 2 => 2xx, OK status codes
+// 4 => 4xx, Request failed due to incorrect client call
+// 5 => 5xx, Request failed because of a server error
+//
+
+function CodedError(code,message,details) {
+    Error.captureStackTrace(this, this.constructor);
+    this.name = this.constructor.name;
+
+    this.code = code;           // if set, gets used to generate HTTP status code
+    this.message = message;     // user friendly(ish) message
+    this.details = details;     // techie/support details, if any
+}
+require('util').inherits(CodedError, Error);
+
+/* Use this method when we DON'T have an Error object
+exports.signalNotOk = function(req,res,code,message,details) {
+    var err = { code:code, message:message, details:details };
+    log(req,code,err);
+    res.status(code[0]*100).json({failure:err});
+}
+
+// Use this method when we have an Error object
+exports.signalError = function(req,res,err) {
+    if( err instanceof ServerError && err.code ) {
+        log(req,err.code,err);
+        res.status( err.code[0]*100).json({failure:err});
+    } else {
+        log(req,500,err);
+        var failure = { code:500, message:err.toString() };
+        res.status( 500 ).json( {failure:failure} );
+    }
+}*/
+
+/*
+function log(req,code,err) {
+    const details = {
+        code:code,
+        url:req.originalUrl,
+        headers:req.headers,
+        auth:req.auth,
+        body:req.body    
+    }
+    console.log( new Date(), 'ERROR:', details, JSON.stringify(err) );
+}*/

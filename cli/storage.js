@@ -1,19 +1,31 @@
+//
+// Functions for interacting with local storage of personas and services
+// in the ~/.cryptomessaging/ directory 
+//
+
 const fs = require('fs')
 const path = require('path')
+const util = require('./util')
+
 const DEBUG = false;
 
 const HOME_DIR = require('os').homedir();
 const PERSONAS_DIR = path.join( HOME_DIR, '.cryptomessaging', 'personas' );
+const SERVICES_FILEPATH = path.join( HOME_DIR, '.cryptomessaging', 'services.json' );
 
-//
-// Operations on local ./cryptomessaging directory
-//
+module.exports = {
+    loadServices: loadServices,
+    saveServices: saveServices,
+    findPersonaByPid: findPersonaByPid,
+    findPersonaByNickname: findPersonaByNickname,
+    loadPersona: loadPersona,
+    loadPersonaSecrets: loadPersonaSecrets,
+    savePersona: savePersona,
+    SERVICES_FILEPATH: SERVICES_FILEPATH
+};
 
 //===== Services =====
 // Services are saved in a JSON file at ~/.cryptomessaging/services.json
-
-const SERVICES_FILEPATH = path.join( HOME_DIR, '.cryptomessaging', 'services.json' );
-exports.SERVICES_FILEPATH = SERVICES_FILEPATH;
 
 function loadServices() {
     if( DEBUG ) console.log( 'loadServices()' );
@@ -25,19 +37,16 @@ function loadServices() {
     let json = fs.readFileSync( SERVICES_FILEPATH );
     return JSON.parse( json );
 }
-exports.loadServices = loadServices;
 
 function saveServices(services) {
     let json = JSON.stringify( services, null, 4 );
     fs.writeFileSync( SERVICES_FILEPATH, json );
 }
-exports.saveServices = saveServices;
-
 
 //===== Personas =====
 
 // find the closest matching persona by partial pid
-exports.findPersonaByPid = function(partialpid) {
+function findPersonaByPid (partialpid) {
     let found = [];
     fs.readdirSync(PERSONAS_DIR).forEach( filename => {
         if( filename.startsWith( partialpid ) ) {
@@ -57,7 +66,7 @@ exports.findPersonaByPid = function(partialpid) {
 }
 
 // find the closest matching persona by nickname
-exports.findPersonaByNickname = function(nickname) {
+function findPersonaByNickname(nickname) {
     nickname = nickname.toLowerCase();
 
     let found = [];
@@ -91,19 +100,17 @@ function loadPersona(pid) {
     let json = fs.readFileSync( filepath );
     return JSON.parse( json );
 }
-exports.loadPersona = loadPersona;
 
 function loadPersonaSecrets(pid) {
     const filepath = path.join( PERSONAS_DIR, pid, 'secrets.json' );
     let json = fs.readFileSync( filepath );
     return JSON.parse( json );
 }
-exports.loadPersonaSecrets = loadPersonaSecrets;
 
-exports.savePersona = function(persona,secrets,imagePath) {
+function savePersona(persona,secrets,imagePath) {
     // make sure the image exists
     if( imagePath && fs.existsSync( imagePath ) != true )
-        return signalError( new Error( "Image doesn't exist" ) );
+        return util.signalError( new Error( "Image doesn't exist" ) );
 
     // make sure my persona directory is set up
     const configdir = ensureDir( path.join( HOME_DIR, '.cryptomessaging' ) );
@@ -134,14 +141,6 @@ function saveJson(obj,dir,filename) {
     fs.writeFileSync( fullpath, json );
     return fullpath; 
 }
-
-// Unified error reporting
-
-function signalError(err) {
-    console.log( err.name, err.message );
-    process.exit(1);
-}
-exports.signalError = signalError;
 
 // ensures the target directory exists
 function ensureDir(path) {

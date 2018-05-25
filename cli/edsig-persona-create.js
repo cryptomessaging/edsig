@@ -6,7 +6,7 @@ const ec = new EdDSA('ed25519')
 const path = require('path')
 
 const edsig = require('../index')
-const util = require('../util')
+const util = require('./util')
 
 let program = require('commander')
 program
