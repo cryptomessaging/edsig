@@ -4,7 +4,7 @@ const edsig = require('../index')
 const util = require('./util')
 const storage = require('./storage')
 
-const DEBUG = true;
+const DEBUG = false;
 
 module.exports = {
     putPersonaFile: putPersonaFile,
@@ -54,7 +54,9 @@ async function putPersonaFile(pid,service,subPersonaPath,file,contentType) {
         url: url.href,
         headers: req.headers
     };
-    return httpRequest(options);
+    let result = await httpRequest(options);
+    result.viewurl = new URL( viewpath, service.viewurl ).href;
+    return result;
 }
 
 // pid - is root pid (for now, later a full keypath)
@@ -116,7 +118,7 @@ function httpRequest(options) {
                     console.log( 'Body for', options.url, 'code', res.statusCode, 'is', body );
                 reject( new Error('statusCode: ' + res.statusCode + ' for ' + options.url ) );
             } else
-                resolve( {res:res, body:body} );
+                resolve( {url:options.url, res:res, body:body} );
         });
     });
 }
@@ -167,5 +169,8 @@ function ensureTrailingSlash(url) {
 
 // remove any trailing slash
 function normalizeServiceUrl(url) {
-
+    if( url.endsWith('/') )
+        return url.substring(0,url.length-1);
+    else
+        return url;
 }

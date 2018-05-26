@@ -20,9 +20,9 @@ function doAction(viewurl) {
     .then( service => {
         console.log( 'Joined service', JSON.stringify(service,null,4), 'at', viewurl );
         return postPersona(service);
-    }).then( persona => {
-        if( persona )
-            console.log( 'Added persona', JSON.stringify(persona,null,4) );
+    }).then( postResult => {
+        if( postResult )
+            console.log( 'Added persona', JSON.stringify(postResult.persona,null,4), 'at', postResult.viewurl );
     }).catch(err => {
         util.signalError(err);
     });   
@@ -30,7 +30,7 @@ function doAction(viewurl) {
 
 async function recordService(viewurl) {
     if( DEBUG ) console.log( 'recordService()' );
-    viewurl = net.ensureTrailingSlash(viewurl);
+    viewurl = net.normalizeServiceUrl(viewurl); // remove trailing slash if any
     let newService = await net.fetchServiceInfo(viewurl);
 
     // fetch my list of all services I'm active with
@@ -45,6 +45,7 @@ async function recordService(viewurl) {
     // add or replace service information and save
     services.active[viewurl] = {
         updated: new Date(),
+        viewurl: viewurl,
         service: newService
     };
     storage.saveServices(services);
@@ -54,12 +55,12 @@ async function recordService(viewurl) {
 
 // if a persona was specified by either --persona or --nickname options, then post 
 // to service we just joined
+// returns { url:, persona:, res:, body: }
 async function postPersona(service) {
-    //if( DEBUG ) console.log( 'postPersona()', service );
+    if( DEBUG ) console.log( 'postPersona()', service );
     let persona;
     if( program.persona ) {
         persona = storage.findPersonaByPid( program.persona );
-
     } else if( program.nickname ) {
         persona = storage.findPersonaByNickname( program.nickname );
     } else
@@ -72,6 +73,7 @@ async function postPersona(service) {
     }
 
     let body = Buffer.from( JSON.stringify(persona,null,4) );
-    await net.putPersonaFile(persona.pid,service,'persona.json',body,"application/json"); 
-    return persona;
+    let result = await net.putPersonaFile(persona.pid,service,'persona.json',body,"application/json"); 
+    result.persona = persona;
+    return result;
 }
