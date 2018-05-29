@@ -7,6 +7,7 @@ const path = require('path')
 
 const edsig = require('../index')
 const util = require('./util')
+const storage = require('./storage')
 
 let program = require('commander')
 program
@@ -21,7 +22,7 @@ program
         }
 
         const { persona, secrets } = createPersona(name,program.image);
-        util.savePersona(persona, secrets, program.image);          
+        storage.savePersona(persona, secrets, program.image);          
     })
     .parse(process.argv);
 
