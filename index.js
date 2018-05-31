@@ -10,6 +10,7 @@ module.exports = {
     verifyRequestSignature: verifyRequestSignature,
     addAuthorization: addAuthorization,
     verifyContentSignature: verifyContentSignature,
+    verifyBody: verifyBody,
     addCertification: addCertification,
     base64url: base64url,
     CodedError: CodedError
@@ -34,6 +35,8 @@ function verifyRequestSignature(path,req) {
     if(!authorization)
         return;  // it's ok!
 
+    // TODO Verify content-hash is correct?
+
     // verify specific EdSig request headers and CRC32C of body (if present)
     let summaryBytes = reqSummaryToBytes( path, req );
     let success = authorization.pubkey.verify(summaryBytes, authorization.sighex);
@@ -43,6 +46,19 @@ function verifyRequestSignature(path,req) {
         return { type:'edsig', pid:authorization.keypath[0] };
     else
         throw new CodedError([4],'EdSig authorization check failed' );
+}
+
+function hashBody(body) {
+    return 'CRC32C ' + crc32c.calculate( body ).toString(16);
+}
+
+function verifyBody(headers,body) {
+    const presentedHash = headers['x-content-hash'];
+    if( !presentedHash )
+        throw new CodedError([4],'Missing x-content-hash header');
+    const expectedHash = hashBody(body);
+    if( presentedHash != expectedHash )
+        throw new CodedError([4],'Content hash in headers', presentedHash, 'did not match hash of body', expectedHash );    
 }
 
 // convert HTTP request to a Buffer
@@ -81,6 +97,14 @@ function ensureContentLengthHeader(headers,body) {
     headers['content-length'] = length;
 }
 
+function ensureContentHash(headers,body) {
+    const presentedHash = headers['x-content-hash'];  // is there one already?
+    const calculatedHash = hashBody( body );
+    headers['x-content-hash'] = calculatedHash;
+    if( presentedHash && presentedHash != calculatedHash )
+        console.log( 'WARNING: Existing x-content-hash header', presentedHash, 'does not match calculated hash', calculatedHash );
+}
+
 // Create an authorization header value from the given Node Request object and an EC keypair
 // path - pathname[?querystring]
 // req { body:Buffer, method:, headers: }
@@ -88,8 +112,7 @@ function ensureContentLengthHeader(headers,body) {
 // Keypath is <pid>[@host1[,host2]...][:subkey]
 function createAuthorization( path, req, keypair, keypath ) {
     // do a crc32c of the body and add to request
-    const bodyHash = crc32c.calculate( req.body );
-    req.headers['x-content-hash'] = 'CRC32C ' + bodyHash.toString(16);
+    ensureContentHash(req.headers,req.body);
 
     // Convert request summary to bytes and sign
     var summaryBytes = reqSummaryToBytes( path, req );
@@ -165,10 +188,7 @@ function contentSummaryToBytes(headers,body) {
 // keypath is optional
 function createCertification( contentPath, body, headers, keypair, keypath ) {
     // do a crc32c of the body and add to request
-    if( !headers['x-content-hash'] ) {
-        const bodyHash = crc32c.calculate( body );
-        headers['x-content-hash'] = 'CRC32C ' + bodyHash.toString(16);
-    }
+    ensureContentHash(headers,body);
 
     if( !headers['x-created'] )
         headers['x-created'] = (new Date()).toISOString();

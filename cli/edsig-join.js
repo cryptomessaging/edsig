@@ -73,7 +73,8 @@ async function postPersona(service) {
     }
 
     let body = Buffer.from( JSON.stringify(persona,null,4) );
-    let result = await net.putPersonaFile(persona.pid,service,'persona.json',body,"application/json"); 
+    let contentPath = 'personas/' + persona.pid + '/persona.json';
+    let result = await net.putPersonaFile(persona.pid,service,'persona.json',body,"application/json",contentPath); 
     result.persona = persona;
     return result;
 }
