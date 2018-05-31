@@ -6,6 +6,7 @@
 const fs = require('fs')
 const path = require('path')
 const util = require('./util')
+const nBest = util.nBest;
 
 const DEBUG = false;
 
@@ -16,6 +17,7 @@ const SERVICES_FILEPATH = path.join( HOME_DIR, '.cryptomessaging', 'services.jso
 module.exports = {
     loadServices: loadServices,
     saveServices: saveServices,
+    findServiceByName: findServiceByName,
     findPersonaByPid: findPersonaByPid,
     findPersonaByNickname: findPersonaByNickname,
     loadPersona: loadPersona,
@@ -26,6 +28,19 @@ module.exports = {
 
 //===== Services =====
 // Services are saved in a JSON file at ~/.cryptomessaging/services.json
+
+function serviceNameResolver(service) {
+    return service.service ? service.service.name : null; 
+}
+
+function findServiceByName(name) {
+    let services = loadServices();
+    let matcher = new nBest.STRING_MATCHER(name);
+    let found = nBest.search( services.active, serviceNameResolver, matcher );
+
+    //console.log( 'findServiceByName()', found );
+    return found.length > 0 ? found[0].item : null;
+}
 
 function loadServices() {
     if( DEBUG ) console.log( 'loadServices()' );

@@ -116,15 +116,16 @@ function addAuthorization( path, req, keypair, keypath ) {
 
 // path of request, WILL be used for verification if the x-content-path was specified
 // req = { body:Buffer, headers: }
-// returns { type:'edsig', pid: }
+// returns { type:'edsig', headers:, pid: }
 function verifyContentSignature(path,req) {
     let body = req.body;
-    let headers = copyHeaders(req.headers,['content-type','x-created','content-length','x-content-hash',
-        'x-content-path']);
+
+    // use a copy of the headers to avoid polluting the source
+    let headers = normalizeHeaders( copyHeaders(req.headers) );
     let summaryBytes = contentSummaryToBytes( headers, body );
 
     // crack open the certification header to get the public key and signature
-    let certification = parseSignature(req.headers,'x-certification');
+    let certification = parseSignature(headers,'x-certification');
     if(!certification)
         throw new CodedError([4],'Missing required header: X-Certification' );
 
@@ -133,19 +134,10 @@ function verifyContentSignature(path,req) {
 
     if( DEBUG) console.log( 'Certified?', success );
     if( success )
-        return { type:'edsig', pid:certification.keypath[0] };
+        return { type:'edsig', headers:headers, pid:certification.keypath[0] };
     else
         throw new CodedError([4],'EdSig certification check failed' );
 }
-
-function copyHeaders(src,names) {
-    let result = {};
-    names.forEach( n => {
-        if( src[n] ) result[n] = src[n];
-    });
-    return result;
-}
-
 
 // headers { content-length:, content-type:, x-created:, x-content-hash:,x-content-path }
 // body: Buffer
@@ -211,6 +203,40 @@ function addCertification( contentPath, req, keypair, keypath ) {
 //
 // Util
 //
+
+// copy ALL headers
+function copyHeaders(headers) {
+    let result = {};
+    Object.keys(headers).forEach( k => {
+        if( headers[k] ) result[k] = headers[k];
+    });
+    return result;
+}
+
+const CONTENT_SIGNATURE_HEADERS = [
+        'x-certification',
+        'content-length',
+        'content-type',
+        'x-created',
+        'x-content-hash',
+        'x-content-path' ];
+
+// Amazon only supports x-amz-meta- headers, so add back the original values
+// AND filter out the non-signature headers
+function normalizeHeaders(headers) {
+    Object.keys(headers).forEach( k=>{
+        let lowkey = k.toLowerCase();
+        if( lowkey.indexOf('x-amz-meta-') == 0 ) {
+            let newkey = 'x-' + lowkey.substring('x-amz-meta-'.length);
+            headers[newkey] = headers[k];
+        }
+
+        if( !CONTENT_SIGNATURE_HEADERS.includes(k) )
+            delete headers[k];   
+    });
+
+    return headers;
+}
 
 // result = NULL or { pubkey:, sighex:, keypath:[ root/pid, child, ... ] }
 function parseSignature(headers,name) {

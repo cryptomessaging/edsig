@@ -11,9 +11,9 @@ const storage = require('./storage')
 
 let program = require('commander')
 program
-    .arguments('[name]')
-    .option('-p, --push [service]', 'Push persona to service')
-    .option('-i, --image [filepath]', 'Include persona image')
+    .arguments('<name>')
+    .option('-p, --push <service>', 'Push persona to service')
+    .option('-i, --image <filepath>', 'Include persona image')
     .action(function(name) {
         name = name.trim();
         if( name.length == 0 ) {

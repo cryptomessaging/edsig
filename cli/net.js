@@ -7,6 +7,7 @@ const storage = require('./storage')
 const DEBUG = false;
 
 module.exports = {
+    getFile: getFile,
     putPersonaFile: putPersonaFile,
     httpRequest: httpRequest,
     fetchServiceInfo: fetchServiceInfo,
@@ -15,59 +16,53 @@ module.exports = {
     normalizeServiceUrl: normalizeServiceUrl
 };
 
+//
+// Persona wrappers around get and put files
+//
+
 // pid - is root pid (for now, later a full keypath)
 // service - is the full service object from our local .cryptomessaging dir
 // subPersonaPath - is the PATH below the controller url + personas + pid, it's 
 // relative to the posters persona directory and CANNOT start with a slash.
 // file - a Buffer
-async function putPersonaFile(pid,service,subPersonaPath,file,contentType) {
-
+// contentPath - OPTIONAL anchor point for the certificate
+async function putPersonaFile(pid,service,subPersonaPath,file,contentType,contentPath) {
     // RELATIVE (no leading slash) path under controller URL
     const viewpath = 'personas/' + pid + '/' + subPersonaPath;
+    return putFile(pid,service,viewpath,file,contentType,contentPath);
+}
 
-    // What is the base URL of the controller for this edge cache?
-    // (Requires trailing slash)
-    const controllerUrl = ensureTrailingSlash( service.service.controller.url );
 
-    // create HTTP request with both authorization and certification
-    const url = new URL( viewpath, controllerUrl );
-    if( DEBUG ) console.log( 'Created', url, 'from', viewpath, controllerUrl );
-    const secrets = storage.loadPersonaSecrets( pid );
-    const keypair = edsig.keypairFromSecret( secrets.root.secret );
-    let req = {
-        body: file,
-        method: 'POST',
-        headers: {
-            "content-type": contentType.toLowerCase(),
-            "content-length": file.length,
-            host: determineHost(controllerUrl),
-            date: new Date().toISOString()
-        }
-    };
-    edsig.addAuthorization( url.pathname, req, keypair );
-    edsig.addCertification( null, req, keypair );
+//
+// Get files from services
+//
 
-    // post request to server
-    const options = {
-        method:'POST',
-        body: file,
-        url: url.href,
-        headers: req.headers
-    };
-    let result = await httpRequest(options);
-    result.viewurl = new URL( viewpath, service.viewurl ).href;
-    return result;
+// path - either full URL or relative path when service is provided
+// service - optional service to resolve relative urls
+async function getFile(url,service) {
+    let options = {};
+    if( service ) {
+        let controllerUrl = extractControllerUrl(service);
+        options.url = new URL(url,controllerUrl).href;
+    } else {
+        options.url = url;  // assume its a full url
+    }
+    let {res,body} = await httpRequest(options);
+    let certified = edsig.verifyContentSignature(options.url,res);
+    return {
+        headers: res.headers,
+        body: body,
+        certified: certified
+    }; 
 }
 
 // pid - is root pid (for now, later a full keypath)
 // service - is the full service object from our local .cryptomessaging dir
-// relativePath - an OPTIONAL anchor point for this content
-// relative to the posters persona directory and CANNOT start with a slash.
+// path - path under the service
+//      relative to the posters persona directory and CANNOT start with a slash.
 // file - a Buffer
-async function putFile(pid,service,relativePath,file,contentType) {
-
-    // RELATIVE (no leading slash) path under controller URL
-    //const viewpath = 'personas/' + pid + '/' + subPersonaPath;
+// contentPath - OPTIONAL anchor point for the certificate
+async function putFile(pid,service,path,file,contentType,contentPath) {
 
     // What is the base URL of the controller for this edge cache?
     // (Requires trailing slash)
@@ -75,7 +70,7 @@ async function putFile(pid,service,relativePath,file,contentType) {
 
     // create HTTP request with both authorization and certification
     // path MUST NOT have leading slash
-    const url = new URL( relativePath, controllerUrl );
+    const url = new URL( path, controllerUrl );
     if( DEBUG ) console.log( 'Created', url, 'from', path, controllerUrl );
     const secrets = storage.loadPersonaSecrets( pid );
     const keypair = edsig.keypairFromSecret( secrets.root.secret );
@@ -90,8 +85,10 @@ async function putFile(pid,service,relativePath,file,contentType) {
             date: new Date().toISOString()
         }
     };
-    edsig.addAuthorization( req, keypair );
-    edsig.addCertification( req.path, req, keypair );
+    edsig.addAuthorization( url.pathname, req, keypair );
+
+    // OK for contentPath to be null
+    edsig.addCertification( contentPath, req, keypair );
 
     // post request to server
     const options = {
@@ -100,7 +97,10 @@ async function putFile(pid,service,relativePath,file,contentType) {
         url: url.href,
         headers: req.headers
     };
-    return httpRequest(options);
+
+    let result = await httpRequest(options);
+    result.viewurl = new URL( path, service.viewurl ).href;
+    return result;
 }
 
 // Promisified request()
@@ -146,6 +146,18 @@ function fetchServiceInfo(baseViewUrl) {
     });
 }
 
+//
+// Util
+//
+
+function extractControllerUrl(service) {
+    if( !service.service
+     || !service.service.controller
+     || !service.service.controller.url )
+        throw new Error('Service is missing controller.url', service );
+    return ensureTrailingSlash( service.service.controller.url );
+}
+
 // Provides only the hostname lowercased when on standard
 // ports, or the hostname:port for all others.
 function determineHost(url) {
@@ -161,10 +173,7 @@ function determineHost(url) {
 // Make sure url has a trailing slash (otherwise URL will think
 // its a file and replace it during merges)
 function ensureTrailingSlash(url) {
-    if( url.endsWith('/') )
-        return url;
-    else
-        return url + '/';
+    return url.endsWith('/') ? url : url + '/';
 }
 
 // remove any trailing slash

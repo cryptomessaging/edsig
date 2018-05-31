@@ -9,9 +9,9 @@ const DEBUG = false;
 let program = require('commander')
 
 program
-    .arguments('[viewurl]')
-    .option('-p, --persona [pid]', 'Use this persona to authorize post')
-    .option('-n, --nickname [nickname]', 'Use this nickname to authorize post')
+    .arguments('<viewurl>')
+    .option('-p, --persona <pid>', 'Use this persona to authorize post')
+    .option('-n, --nickname <nickname>', 'Use this nickname to authorize post')
     .action( doAction )
     .parse(process.argv);
 

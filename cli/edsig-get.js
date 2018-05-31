@@ -1,29 +1,33 @@
 #!/usr/bin/env node
 
-const request = require('request');
-var program = require('commander');
-const edsig = require('../index');
+const request = require('request')
+const fs = require('fs')
+
+const edsig = require('../index')
+const util = require('./util')
+const net = require('./net')
+const storage = require('./storage')
+
+var program = require('commander')
 
 program
-    .arguments('<url>')
-    .action(function(url) {
-        request( url, (err,res,body) => {
-            if(err)
-                return console.log('ERROR:', err);
-
-            // verify the content certification
-            let req = {
-                originalUrl:"",
-                body: body,
-                headers: res.headers
-            };
-            console.log('req',req);
-            edsig.verifyContentSignature(req,(err,auth) => {
-                if(err)
-                    return console.log('FAILED to certify content');
-
-                console.log('Certified from',auth,body);
-            });
-        }); 
+    .arguments('<url> [filename]')
+    .option('-s, --service <service>', 'Service to get file from, for relative urls')
+    .action(function(url,filename) {
+        doAction(url,filename,program.service)
+        .then( result => {
+            console.log( JSON.stringify( result.certified, null, 4 ) );
+        }).catch(err => {
+            util.signalError(err);
+        });
     })
     .parse(process.argv);
+
+async function doAction(url,filename,serviceName) {
+    let service = serviceName ? storage.findServiceByName( serviceName ) : null;
+    let result = await net.getFile(url,service);
+    if( filename ) {
+        fs.writeFileSync( filename, result.body );
+    }
+    return result; 
+}

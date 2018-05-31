@@ -2,6 +2,11 @@
 
 var program = require('commander');
 
+// Standard options:
+//  --nickname
+//  --service
+//  --pid
+
 program
     .version('0.1.0')
     .command('persona', 'Create, list, and update personas')
