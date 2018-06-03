@@ -4,7 +4,8 @@
     "description": "EdSig library and command line tool for generating EdSig requests to Cryptomessaging services",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "node test/main",
+        "docs": "jsdoc2md index.js > api.md"
     },
     "bin": {
         "edsig": "./cli/index.js"
@@ -20,5 +21,8 @@
         "request": "^2.86.0",
         "elliptic": "^6.4.0",
         "fast-crc32c": "^1.0.4"
+    },
+    "devDependencies": {
+        "jsdoc-to-markdown": "^4.0.1"
     }
 }

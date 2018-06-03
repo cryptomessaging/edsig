@@ -4,7 +4,7 @@ Edwards-curve based cryptographic HTTP authorization and certification SDK for N
 
 ## Installation
 
-The EdSig module can be used for both creating Node servers, and as a command line tool.
+The EdSig module can be used for both creating Node based [Cryptomessaging](https://cryptomessaging.org) services, and as a command line tool for generating cryptomessaging files and communicating with cryptomessaging services.
 
 Assuming you are using a Mac and have Node.js 8+ installed, to use the command line interface:
 <pre>
@@ -20,12 +20,12 @@ $ npm install edsig --save
 
 ## Command Line Interface Examples
 
-Create a new persona with a nickname "Satoshi" on your local computer
+Create a new persona with a nickname "Satoshi" on your local computer.  The resulting files are stored on your computer under the ~/.cryptomessaging directory.
 <pre>
 $ edsig persona create Satoshi
 </pre>
 
-Join the "Alpha" Persona Service at cryptomessaging.org and upload your Satoshi persona
+Join the "Alpha" Persona Service at cryptomessaging.org and upload your new Satoshi persona:
 <pre>
 $ edsig join https://personas.cryptomessaging.org --nickname Satoshi
 </pre>
