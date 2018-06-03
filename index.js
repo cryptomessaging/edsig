@@ -431,7 +431,7 @@ function asKVset(s) {
  * Create a persona and secrets from a nickname and optional secret.
  * @param {string} nickname
  * @param {Buffer} secret - OPTIONAL, when not provided a new secret is created
- * @return {Persona,Secrets}
+ * @return {object} result - containing the persona and secrets
  */
 function createPersona(nickname,secret) {
     if( !secret )
