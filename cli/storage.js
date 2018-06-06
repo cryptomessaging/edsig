@@ -147,7 +147,7 @@ function savePersona(persona,secrets,imagePath) {
         fs.copyFileSync( imagePath, dest );
     }
 
-    console.log( 'Created persona', JSON.stringify(persona, null, 4), 'at', filename );
+    console.log( 'Created persona:', JSON.stringify(persona, null, 4), 'at', filename );
 }
 
 //

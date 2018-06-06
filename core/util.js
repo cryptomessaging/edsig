@@ -4,6 +4,7 @@ const crc32c = require('fast-crc32c')
 const { randomBytes } = require('crypto')
 
 module.exports = {
+    createPersona: createPersona,
     keypairFromSecret: keypairFromSecret,
     addContentHeaders: addContentHeaders,
     base64url: base64url,
