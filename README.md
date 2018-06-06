@@ -2,6 +2,11 @@
 
 Edwards-curve based cryptographic HTTP authorization and certification SDK for Node.js and command line tools.
 
+The SDK can be used to build clients or servers that allow users to authenticate HTTP requests using public key based identities created on a smartphone or laptop.  Additionally the library supports certifying content using the same public keys, so that content can be distributed using web servers and edge caching networks.
+
+A command line interface is included, to help programmers quickly learn how EdSig works, and for interacting with EdSig based services.  A sample persona service is available at https://personas.cryptomessaging.org
+
+
 ## Installation
 
 The EdSig module can be used for both creating Node based [Cryptomessaging](https://cryptomessaging.org) services, and as a command line tool for generating cryptomessaging files and communicating with cryptomessaging services.
@@ -20,19 +25,19 @@ $ npm install edsig --save
 
 ## Command Line Interface Examples
 
-Create a new persona with a nickname "Satoshi" on your local computer.  The resulting files are stored on your computer under the ~/.cryptomessaging directory.
+Create a new persona with a nickname "Satoshi" on your local computer.  The resulting files are stored on your computer under the ~/.cryptomessaging directory.  A persona is one version of yourself, such as your role as a parent, or the way you are around your old college friends.  You can create as many personas as you want, and they are all kept completely separate.
 <pre>
 $ edsig persona create Satoshi
 </pre>
 
-Join the "Alpha" Persona Service at cryptomessaging.org and upload your new Satoshi persona:
+Join the "Alpha" persona service at cryptomessaging.org and upload your new Satoshi persona.  The following command remembers the "Alpha Persona Service" on your local computer and allows you to refer to it by name, such as "-s alpha".
 <pre>
 $ edsig join https://personas.cryptomessaging.org --nickname Satoshi
 </pre>
 
 Fetch the persona.json file you just uploaded in the last example.  Copy the URL printed after the last example and substitute it into the example below:
 <pre>
-$ edsig get -s alp personas/-E0MwwjCx1JOLBo6q0yUn4w9KyDEV5xUdBUiPy-k8hI/persona.json persona.json > persona.json.edsig
+$ edsig get -s alp personas/-E0MwwjCx1JOLBo6q0yUn4w9KyDEV5xUdBUiPy-k8hI/persona.json --save-sig persona.json.edsig
 </pre>
 
 

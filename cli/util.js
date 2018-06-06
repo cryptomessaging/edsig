@@ -1,18 +1,15 @@
-const DEBUG = true;
-
-//
-// Unified error reporting for the command line tool
-//
-
-function signalError(err) {
-    if( DEBUG )
+/**
+ * Unified error reporting for the command line tool.  The the global
+ * DEBUG is true the stack trace will also be displayed.
+ * @param {Error} err
+ */
+exports.signalError = function(err) {
+    if( global.DEBUG )
         console.error(err);
     else
         console.log( err.name, err.message );
     process.exit(1);
 }
-exports.signalError = signalError;
-
 
 //
 // Matching

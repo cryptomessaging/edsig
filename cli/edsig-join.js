@@ -58,14 +58,7 @@ async function recordService(viewurl) {
 // returns { url:, persona:, res:, body: }
 async function postPersona(service) {
     if( DEBUG ) console.log( 'postPersona()', service );
-    let persona;
-    if( program.persona ) {
-        persona = storage.findPersonaByPid( program.persona );
-    } else if( program.nickname ) {
-        persona = storage.findPersonaByNickname( program.nickname );
-    } else
-        // no persona specified, so we are done
-        return;
+...
 
     if( !persona ) {
         util.signalError( new Error('Could not find specified persona') );

@@ -1,4 +1,6 @@
 const edsig = require('../index')
+
+
 const { randomBytes } = require('crypto')
 const EdDSA = require('elliptic').eddsa
 const ec = new EdDSA('ed25519')
@@ -87,17 +89,3 @@ function createRequest() {
 
     return { path:path, contentPath:contentPath, req:req };   
 }
-
-
-class Foo {
-    constructor(bar) {
-        this.bar = bar;
-    }
-
-    giggle() {
-        return "ha ha";
-    }
-}
-
-let blah = new Foo('babble');
-console.log( 'giggle?', blah.giggle(), blah.bar );

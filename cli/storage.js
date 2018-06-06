@@ -8,8 +8,6 @@ const path = require('path')
 const util = require('./util')
 const nBest = util.nBest;
 
-const DEBUG = false;
-
 const HOME_DIR = require('os').homedir();
 const PERSONAS_DIR = path.join( HOME_DIR, '.cryptomessaging', 'personas' );
 const SERVICES_FILEPATH = path.join( HOME_DIR, '.cryptomessaging', 'services.json' );
@@ -37,13 +35,17 @@ function findServiceByName(name) {
     let services = loadServices();
     let matcher = new nBest.STRING_MATCHER(name);
     let found = nBest.search( services.active, serviceNameResolver, matcher );
+    if( found.length == 0 )
+        throw new Error('Failed to find service with name ' + name );
 
-    //console.log( 'findServiceByName()', found );
-    return found.length > 0 ? found[0].item : null;
+    if( global.DEBUG )
+        console.log( 'Using service:', found[0].item.service.name );
+
+    return found[0].item;
 }
 
 function loadServices() {
-    if( DEBUG ) console.log( 'loadServices()' );
+    //if( global.DEBUG ) console.log( 'loadServices()' );
     if( fs.existsSync( SERVICES_FILEPATH ) != true ) {
         // doesn't exist yet, so simply return an empty one
         return {};
@@ -61,7 +63,7 @@ function saveServices(services) {
 //===== Personas =====
 
 // find the closest matching persona by partial pid
-function findPersonaByPid (partialpid) {
+function findPersonaByPid(partialpid) {
     let found = [];
     fs.readdirSync(PERSONAS_DIR).forEach( filename => {
         if( filename.startsWith( partialpid ) ) {
@@ -69,13 +71,14 @@ function findPersonaByPid (partialpid) {
         }
     });
 
-    if( found.length == 0 ) {
-        console.log( 'WARNING: Failed to find persona with pid starting with', partialpid );
-        return;
-    }
+    if( found.length == 0 )
+        throw new Error( 'Failed to find persona with pid starting with ' + partialpid );
     
     if( found.length > 1 )
-        console.log( 'WARNING: Multiple personas found, using', found[0] );
+        throw new Error( 'Multiple personas found: ' + found.join(', ') );
+
+    if( global.DEBUG )
+        console.log( 'Using persona:', found[0].nickname );
 
     return loadPersona(found[0]);
 }
@@ -96,15 +99,16 @@ function findPersonaByNickname(nickname) {
         }
     });
 
-    if( found.length == 0 ) {
-        console.log( 'WARNING: Failed to find persona with nickname containing', nickname );
-        return;
-    }
+    if( found.length == 0 )
+        throw new Error( 'WARNING: Failed to find persona with nickname containing ' + nickname );
 
     if( found.length > 1 ) {
         let duplicates = found.reduce( (result,e) => { result.push(e.nickname); return result },[]);
-        console.log( 'WARNING: Multiple personas found, using', found[0].nickname, 'from', duplicates.join(', ') );
+        throw new Error( 'WARNING: Multiple personas found: ' + duplicates.join(', ') );
     }
+
+    if( global.DEBUG )
+        console.log( 'Using persona:', found[0].nickname );
 
     return found[0];
 }

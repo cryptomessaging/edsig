@@ -4,8 +4,6 @@ const edsig = require('../index')
 const util = require('./util')
 const storage = require('./storage')
 
-const DEBUG = false;
-
 module.exports = {
     getFile: getFile,
     putPersonaFile: putPersonaFile,
@@ -37,7 +35,7 @@ async function putPersonaFile(pid,service,subPersonaPath,file,contentType,conten
 // Get files from services
 //
 
-// path - either full URL or relative path when service is provided
+// url - either full URL or relative path when service is provided
 // service - optional service to resolve relative urls
 async function getFile(url,service) {
     let options = {};
@@ -47,8 +45,13 @@ async function getFile(url,service) {
     } else {
         options.url = url;  // assume its a full url
     }
+
     let {res,body} = await httpRequest(options);
     let certified = edsig.verifyContentSignature(options.url,res);
+
+    if( global.VERBOSE )
+        console.log( 'Certified?', certified ? JSON.stringify( certified, null, 4 ) : 'No' );
+
     return {
         headers: res.headers,
         body: body,
@@ -71,7 +74,7 @@ async function putFile(pid,service,path,file,contentType,contentPath) {
     // create HTTP request with both authorization and certification
     // path MUST NOT have leading slash
     const url = new URL( path, controllerUrl );
-    if( DEBUG ) console.log( 'Created', url, 'from', path, controllerUrl );
+    if( global.DEBUG ) console.log( 'Created', url, 'from', path, controllerUrl );
     const secrets = storage.loadPersonaSecrets( pid );
     const keypair = edsig.keypairFromSecret( secrets.root.secret );
     let req = {
@@ -108,7 +111,9 @@ async function putFile(pid,service,path,file,contentType,contentPath) {
 // .then( {res:, body:} )
 // throws Error when response status code NOT 200
 function httpRequest(options) {
-    if( DEBUG ) console.log( 'httpRequest()', options );
+    if( global.VERBOSE )
+        console.log( 'HTTP Request:', options );
+
     return new Promise((resolve,reject)=>{
         request( options, (err,res,body) => {
             if(err)
@@ -129,10 +134,11 @@ function httpRequest(options) {
 
 // baseViewUrl MUST be a URL with no pathname or query string.
 function fetchServiceInfo(baseViewUrl) {
-    if( DEBUG ) console.log('fetchServiceInfo()',baseViewUrl);
+    if( global.DEBUG ) console.log('fetchServiceInfo()',baseViewUrl);
+    
     return new Promise((resolve,reject)=>{
         const options = { url:new URL( 'service.json', baseViewUrl ).href };
-        if( DEBUG ) console.log('request() options', options );
+        if( global.DEBUG ) console.log('request() options', options );
         request( options, (err,res,body) => {
             if(err)
                 reject(err);

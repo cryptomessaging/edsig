@@ -1,13 +1,13 @@
 ## Classes
 
 <dl>
+<dt><a href="#VerificationResult">VerificationResult</a></dt>
+<dd><p>Verification result from both verifyRequestSignature()
+and verifyContentSignature() methods.</p>
+</dd>
 <dt><a href="#HttpRequest">HttpRequest</a></dt>
 <dd><p>Provides a subset of the Node.js Request Module, which is useful for
 passing around basic HTTP request values.</p>
-</dd>
-<dt><a href="#EdsigVerification">EdsigVerification</a></dt>
-<dd><p>Verification result from both verifyRequestSignature()
-and verifyContentSignature() methods.</p>
 </dd>
 <dt><a href="#Signature">Signature</a></dt>
 <dd><p>Contains the parsed values from an EdSig signature header</p>
@@ -17,12 +17,8 @@ and verifyContentSignature() methods.</p>
 ## Functions
 
 <dl>
-<dt><a href="#verifyRequestSignature">verifyRequestSignature(path)</a> ⇒ <code><a href="#EdsigVerification">EdsigVerification</a></code></dt>
-<dd><p>Verify an HTTP request signature.</p>
-</dd>
-<dt><a href="#reqSummaryToBytes">reqSummaryToBytes(method, path, headers)</a> ⇒ <code>Buffer</code></dt>
-<dd><p>Convert HTTP request method, path, and certain headers to a Buffer. Format of
-    buffer is &quot;METHOD path\nheader1value\nheader2value\n...headerNvalue&quot;</p>
+<dt><a href="#verifyRequestSignature">verifyRequestSignature(path)</a> ⇒ <code><a href="#VerificationResult">VerificationResult</a></code></dt>
+<dd><p>Verify an HTTP request signature that was signed using an EdSig authorization header.</p>
 </dd>
 <dt><a href="#createAuthorization">createAuthorization(path, req, keypair, keypath)</a></dt>
 <dd><p>Create an authorization header value from the given Node Request object and an
@@ -31,50 +27,26 @@ elliptic curve keypair.</p>
 <dt><a href="#addAuthorization">addAuthorization(path, req, keypair, keypath)</a></dt>
 <dd><p>Add an authorization header value to the provided req.headers map.</p>
 </dd>
-<dt><a href="#contentSummaryToBytes">contentSummaryToBytes(headers, body)</a> ⇒ <code>string</code></dt>
-<dd><p>Convert the headers and body to a content summary string that can be signed or verified.  The
-following headers are used for the summary: content-length, content-type, x-created,
-x-content-hash, and x-content-path.</p>
+<dt><a href="#verifyContentSignature">verifyContentSignature(path, req)</a> ⇒ <code><a href="#VerificationResult">VerificationResult</a></code></dt>
+<dd><p>Verify that the x-certification header contains a valid Edwards signature.</p>
 </dd>
-<dt><a href="#createCertification">createCertification(contentPath, body, headers, keypair, keypath)</a></dt>
+<dt><a href="#createCertification">createCertification(contentPath, headers, body, keypair, keypath)</a></dt>
 <dd><p>Create a certification header value.</p>
 </dd>
 <dt><a href="#addCertification">addCertification(contentPath, req, keypair, keypath)</a></dt>
 <dd><p>Modifies the req.headers by adding the x-certification header and other headers as necessary</p>
-</dd>
-<dt><a href="#addContentHeaders">addContentHeaders(headers, body)</a></dt>
-<dd><p>Add the content-length and x-content-hash HTTP headers for the given body.</p>
-</dd>
-<dt><a href="#hashBody">hashBody(body)</a> ⇒ <code>string</code></dt>
-<dd><p>Provides an HTTP ready representation of the CRC32C hash of the body.</p>
-</dd>
-<dt><a href="#copyHeaders">copyHeaders()</a> ⇒</dt>
-<dd><p>Copy all headers.</p>
-</dd>
-<dt><a href="#normalizeHeaders">normalizeHeaders(headers)</a> ⇒</dt>
-<dd><p>Amazon only supports x-amz-meta- headers, so add back the original values
-AND filter out the non-signature headers.</p>
-</dd>
-<dt><a href="#base64url">base64url(buffer)</a> ⇒ <code>string</code></dt>
-<dd><p>Convert a base64 buffer to a base64url string.
-The character + becomes -, / becomes _, trailing = are removed
-More info at <a href="https://tools.ietf.org/html/rfc4648#section-5">https://tools.ietf.org/html/rfc4648#section-5</a>
-NOTE: Buffer() correctly decodes base64url, so we just need this encode function.</p>
-</dd>
-<dt><a href="#clean">clean(y)</a> ⇒ <code>string</code></dt>
-<dd><p>Trim the whitespace off a string.  If the string is null simply return null.</p>
-</dd>
-<dt><a href="#trim">trim(y)</a> ⇒ <code>string</code></dt>
-<dd><p>Trim the whitespace off a string.  If the string is null simply return null.</p>
-</dd>
-<dt><a href="#asKVset">asKVset()</a></dt>
-<dd><p>Convert a string of the form key1=value1,key2=value2</p>
 </dd>
 <dt><a href="#createPersona">createPersona(nickname, secret)</a> ⇒ <code>object</code></dt>
 <dd><p>Create a persona and secrets from a nickname and optional secret.</p>
 </dd>
 <dt><a href="#keypairFromSecret">keypairFromSecret(secret)</a> ⇒ <code>Keypair</code></dt>
 <dd><p>Convert a base64url encoded Edwards elliptic curve secret into a Keypair.</p>
+</dd>
+<dt><a href="#base64url">base64url(buffer)</a> ⇒ <code>string</code></dt>
+<dd><p>Convert a base64 buffer to a base64url string.
+The character + becomes -, / becomes _, trailing = are removed
+More info at <a href="https://tools.ietf.org/html/rfc4648#section-5">https://tools.ietf.org/html/rfc4648#section-5</a>
+NOTE: Buffer() correctly decodes base64url, so we just need this encode function.</p>
 </dd>
 <dt><a href="#CodedError">CodedError(code, message, details)</a></dt>
 <dd><p>Errors are coded with an integer array.  The leftmost/first number
@@ -88,6 +60,23 @@ of HTTP status codes:
 </dd>
 </dl>
 
+<a name="VerificationResult"></a>
+
+## VerificationResult
+Verification result from both verifyRequestSignature()
+and verifyContentSignature() methods.
+
+**Kind**: global class  
+<a name="new_VerificationResult_new"></a>
+
+### new exports.VerificationResult(pid)
+Create an EdSig verification result for the given pid.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| pid | <code>string</code> | A base64url encoded public key representing the persona id that  signed the request or content. |
+
 <a name="HttpRequest"></a>
 
 ## HttpRequest
@@ -97,32 +86,15 @@ passing around basic HTTP request values.
 **Kind**: global class  
 <a name="new_HttpRequest_new"></a>
 
-### new HttpRequest(method, headers, body)
+### new exports.HttpRequest(method, headers, body)
 Create an HttpRequest.
 
 
 | Param | Type | Description |
 | --- | --- | --- |
 | method | <code>string</code> | POST, GET, etc. |
-| headers | <code>object</code> | Simple map of HTTP header names to values |
-| body | <code>Buffer</code> | Content of request.  Can be null or a string. |
-
-<a name="EdsigVerification"></a>
-
-## EdsigVerification
-Verification result from both verifyRequestSignature()
-and verifyContentSignature() methods.
-
-**Kind**: global class  
-<a name="new_EdsigVerification_new"></a>
-
-### new EdsigVerification(pid)
-Create an EdSig verification for the given pid.
-
-
-| Param | Type | Description |
-| --- | --- | --- |
-| pid | <code>string</code> | A base64url encoded public key |
+| headers | <code>object</code> | Simple map of HTTP header names to values.  Header names must be lower case. |
+| body | <code>Buffer</code> | Content of request.  Can also be null or a string. |
 
 <a name="Signature"></a>
 
@@ -130,14 +102,9 @@ Create an EdSig verification for the given pid.
 Contains the parsed values from an EdSig signature header
 
 **Kind**: global class  
-
-* [Signature](#Signature)
-    * [new Signature(pubkey, sighex, keypath)](#new_Signature_new)
-    * [.parse(headers, name)](#Signature.parse) ⇒ [<code>Signature</code>](#Signature)
-
 <a name="new_Signature_new"></a>
 
-### new Signature(pubkey, sighex, keypath)
+### new exports.Signature(pubkey, sighex, keypath)
 Create an EdSig Signature from the parsed values.
 
 
@@ -147,30 +114,13 @@ Create an EdSig Signature from the parsed values.
 | sighex |  | The signature in hexadecimal |
 | keypath | <code>string</code> | A simple pid, or complex <pid>:<subkey>@host1,host2,..hostN |
 
-<a name="Signature.parse"></a>
-
-### Signature.parse(headers, name) ⇒ [<code>Signature</code>](#Signature)
-Parse an EdSig authorization or x-certification header in the form "EdSig kp=<keypath>,sig=<base64url signature>"
-
-**Kind**: static method of [<code>Signature</code>](#Signature)  
-**Returns**: [<code>Signature</code>](#Signature) - or null  
-**Throws**:
-
-- Error When an unsupported auth scheme is found, or required parameters are missing.
-
-
-| Param | Type | Description |
-| --- | --- | --- |
-| headers | <code>object</code> | HTTP header map |
-| name | <code>string</code> | name of HTTP header to parse, 'authorization' or 'x-certification' |
-
 <a name="verifyRequestSignature"></a>
 
-## verifyRequestSignature(path) ⇒ [<code>EdsigVerification</code>](#EdsigVerification)
-Verify an HTTP request signature.
+## verifyRequestSignature(path) ⇒ [<code>VerificationResult</code>](#VerificationResult)
+Verify an HTTP request signature that was signed using an EdSig authorization header.
 
 **Kind**: global function  
-**Returns**: [<code>EdsigVerification</code>](#EdsigVerification) - - when authorization succeeds, or null when no authorization header presented  
+**Returns**: [<code>VerificationResult</code>](#VerificationResult) - - when authorization succeeds, or null when no authorization header presented  
 **Throws**:
 
 - Error when authorization header is present, but signature check fails
@@ -179,22 +129,7 @@ Verify an HTTP request signature.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| path | <code>string</code> | pathname of request including query string |
-
-<a name="reqSummaryToBytes"></a>
-
-## reqSummaryToBytes(method, path, headers) ⇒ <code>Buffer</code>
-Convert HTTP request method, path, and certain headers to a Buffer. Format of
-    buffer is "METHOD path\nheader1value\nheader2value\n...headerNvalue"
-
-**Kind**: global function  
-**Returns**: <code>Buffer</code> - Summary string of rewquest.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| method | <code>string</code> | HTTP method, i.e. GET, POST, PUT |
-| path | <code>string</code> | pathname, including query string if any. |
-| headers | <code>object</code> | Simple map of header names to values. |
+| path | <code>string</code> | pathname of request including query string.  I.e. http://mydomain.com/pathname?querystring |
 
 <a name="createAuthorization"></a>
 
@@ -209,7 +144,7 @@ elliptic curve keypair.
 | path | <code>string</code> | "/pathname[?querystring]" |
 | req | [<code>HttpRequest</code>](#HttpRequest) | Node.js like Request including method, headers, and body properties. |
 | keypair | <code>Keypair</code> | an elliptic curve keypair |
-| keypath | <code>string</code> | OPTIONAL keypath as <pid>[:subkey][@host1[,host2[,hostN]].  When keypath is not provided, the keypair pid is used. |
+| keypath | <code>string</code> | OPTIONAL keypath as <pid>[:subkey][@host1[,host2[,hostN]]].  When keypath is not provided, the keypair pid is used. |
 
 <a name="addAuthorization"></a>
 
@@ -225,23 +160,26 @@ Add an authorization header value to the provided req.headers map.
 | keypair | <code>Keypair</code> | an elliptic curve keypair |
 | keypath | <code>string</code> | OPTIONAL keypath as <pid>[:subkey][@host1[,host2[,hostN]].  When keypath is not provided, the keypair pid is used. |
 
-<a name="contentSummaryToBytes"></a>
+<a name="verifyContentSignature"></a>
 
-## contentSummaryToBytes(headers, body) ⇒ <code>string</code>
-Convert the headers and body to a content summary string that can be signed or verified.  The
-following headers are used for the summary: content-length, content-type, x-created,
-x-content-hash, and x-content-path.
+## verifyContentSignature(path, req) ⇒ [<code>VerificationResult</code>](#VerificationResult)
+Verify that the x-certification header contains a valid Edwards signature.
 
 **Kind**: global function  
+**Returns**: [<code>VerificationResult</code>](#VerificationResult) - on success, null when no 'x-certification' header presented.  
+**Throws**:
 
-| Param | Type |
-| --- | --- |
-| headers | <code>object</code> | 
-| body | <code>Buffer</code> | 
+- [<code>CodedError</code>](#CodedError) When the certification header does not match the request content.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| path | <code>string</code> | pathname of request. WILL be used for verification if the x-content-path was specified |
+| req | [<code>HttpRequest</code>](#HttpRequest) | Node.js Request like object containing the headers |
 
 <a name="createCertification"></a>
 
-## createCertification(contentPath, body, headers, keypair, keypath)
+## createCertification(contentPath, headers, body, keypair, keypath)
 Create a certification header value.
 
 **Kind**: global function  
@@ -249,8 +187,8 @@ Create a certification header value.
 | Param | Type | Description |
 | --- | --- | --- |
 | contentPath | <code>string</code> | OPTIONAL path to anchor content within url |
-| body | <code>Buffer</code> |  |
 | headers | <code>object</code> | HTTP headers |
+| body | <code>Buffer</code> |  |
 | keypair | <code>Keypair</code> | an elliptic curve keypair |
 | keypath | <code>string</code> | OPTIONAL keypath as <pid>[:subkey][@host1[,host2[,hostN]].  When keypath is not provided, the keypair pid is used. |
 
@@ -268,93 +206,6 @@ Modifies the req.headers by adding the x-certification header and other headers 
 | keypair | <code>Keypair</code> | an elliptic curve keypair |
 | keypath | <code>string</code> | OPTIONAL keypath as <pid>[:subkey][@host1[,host2[,hostN]].  When keypath is not provided, the keypair pid is used. |
 
-<a name="addContentHeaders"></a>
-
-## addContentHeaders(headers, body)
-Add the content-length and x-content-hash HTTP headers for the given body.
-
-**Kind**: global function  
-
-| Param | Type |
-| --- | --- |
-| headers | <code>object</code> | 
-| body | <code>Buffer</code> | 
-
-<a name="hashBody"></a>
-
-## hashBody(body) ⇒ <code>string</code>
-Provides an HTTP ready representation of the CRC32C hash of the body.
-
-**Kind**: global function  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| body | <code>Buffer</code> | Body can be a buffer or string |
-
-<a name="copyHeaders"></a>
-
-## copyHeaders() ⇒
-Copy all headers.
-
-**Kind**: global function  
-**Returns**: A simple copy of the map.  
-**Poaram**: <code>object</code> headers - map of key/value pairs.  
-<a name="normalizeHeaders"></a>
-
-## normalizeHeaders(headers) ⇒
-Amazon only supports x-amz-meta- headers, so add back the original values
-AND filter out the non-signature headers.
-
-**Kind**: global function  
-**Returns**: The provided map.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| headers | <code>object</code> | map of heaver name to values, including Amazon specific x-amz-meta ones. |
-
-<a name="base64url"></a>
-
-## base64url(buffer) ⇒ <code>string</code>
-Convert a base64 buffer to a base64url string.
-The character + becomes -, / becomes _, trailing = are removed
-More info at https://tools.ietf.org/html/rfc4648#section-5
-NOTE: Buffer() correctly decodes base64url, so we just need this encode function.
-
-**Kind**: global function  
-**Returns**: <code>string</code> - base64url representation of buffer  
-
-| Param | Type |
-| --- | --- |
-| buffer | <code>Buffer</code> | 
-
-<a name="clean"></a>
-
-## clean(y) ⇒ <code>string</code>
-Trim the whitespace off a string.  If the string is null simply return null.
-
-**Kind**: global function  
-
-| Param | Type |
-| --- | --- |
-| y | <code>string</code> | 
-
-<a name="trim"></a>
-
-## trim(y) ⇒ <code>string</code>
-Trim the whitespace off a string.  If the string is null simply return null.
-
-**Kind**: global function  
-
-| Param | Type |
-| --- | --- |
-| y | <code>string</code> | 
-
-<a name="asKVset"></a>
-
-## asKVset()
-Convert a string of the form key1=value1,key2=value2
-
-**Kind**: global function  
 <a name="createPersona"></a>
 
 ## createPersona(nickname, secret) ⇒ <code>object</code>
@@ -378,6 +229,21 @@ Convert a base64url encoded Edwards elliptic curve secret into a Keypair.
 | Param | Type | Description |
 | --- | --- | --- |
 | secret | <code>string</code> | base64url encoded secret |
+
+<a name="base64url"></a>
+
+## base64url(buffer) ⇒ <code>string</code>
+Convert a base64 buffer to a base64url string.
+The character + becomes -, / becomes _, trailing = are removed
+More info at https://tools.ietf.org/html/rfc4648#section-5
+NOTE: Buffer() correctly decodes base64url, so we just need this encode function.
+
+**Kind**: global function  
+**Returns**: <code>string</code> - base64url representation of buffer  
+
+| Param | Type |
+| --- | --- |
+| buffer | <code>Buffer</code> | 
 
 <a name="CodedError"></a>
 

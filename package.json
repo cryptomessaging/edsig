@@ -5,14 +5,15 @@
     "main": "index.js",
     "scripts": {
         "test": "node test/main",
-        "docs": "jsdoc2md index.js > api.md"
+        "docs": "jsdoc2md core/authorization.js core/certification.js > docs/api.md"
     },
     "bin": {
         "edsig": "./cli/index.js"
     },
     "keywords": [
         "EdSig",
-        "Cryptomessaging"
+        "Cryptomessaging",
+        "Elliptic curve"
     ],
     "author": "Mike Prince",
     "license": "GPL-3.0-or-later",
