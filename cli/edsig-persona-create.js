@@ -9,7 +9,7 @@ const edsig = require('../index')
 const util = require('./util')
 const storage = require('./storage')
 
-let program = require('commander')
+let program = Options.setup( require('commander') )
 let acted;
 program
     .description('Create a persona on the local computer')

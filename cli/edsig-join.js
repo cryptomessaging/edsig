@@ -3,33 +3,34 @@
 const storage = require('./storage')
 const net = require('./net')
 const util = require('./util')
+const Options = require('./options')
 
-const DEBUG = false;
-
-let program = require('commander')
-
+let program = Options.setup( require('commander') )
+let acted;
 program
     .arguments('<viewurl>')
-    .option('-p, --persona <pid>', 'Use this persona to authorize post')
-    .option('-n, --nickname <nickname>', 'Use this nickname to authorize post')
-    .action( doAction )
+    .action( viewurl => {
+        acted = true;
+        handleAction(viewurl).catch(err => {
+            util.signalError(err);
+        });
+    })
     .parse(process.argv);
 
-function doAction(viewurl) {
-    recordService(viewurl)
-    .then( service => {
-        console.log( 'Joined service', JSON.stringify(service,null,4), 'at', viewurl );
-        return postPersona(service);
-    }).then( postResult => {
-        if( postResult )
-            console.log( 'Added persona', JSON.stringify(postResult.persona,null,4), 'at', postResult.viewurl );
-    }).catch(err => {
-        util.signalError(err);
-    });   
+if( !acted )
+    program.help();
+
+async function handleAction(viewurl) {
+    let options = new Options(program);
+    let service = await recordService(viewurl);
+    if( options.persona )
+        await net.putPersonaFile(options.persona,service);
 }
 
+/**
+ * Fetch the service configuration and save locally.
+ */
 async function recordService(viewurl) {
-    if( DEBUG ) console.log( 'recordService()' );
     viewurl = net.normalizeServiceUrl(viewurl); // remove trailing slash if any
     let newService = await net.fetchServiceInfo(viewurl);
 
@@ -40,7 +41,7 @@ async function recordService(viewurl) {
     if( !services.active )
         services.active = {};
     else if( typeof services.active !== 'object' )
-        util.signalError( new Error("Invalid 'active' property in services.json; Must be an object!" ) );
+        throw new Error("Invalid 'active' property in services.json; Must be an object!" );
     
     // add or replace service information and save
     services.active[viewurl] = {
@@ -50,24 +51,11 @@ async function recordService(viewurl) {
     };
     storage.saveServices(services);
 
-    return services.active[viewurl];
-}
+    let service = services.active[viewurl];
+    if( global.DEBUG )
+        console.log( 'Joined service:', util.stringify(service), 'at', viewurl );
+    else
+        console.log( 'Joined service:', service.service.name, 'at', viewurl );
 
-// if a persona was specified by either --persona or --nickname options, then post 
-// to service we just joined
-// returns { url:, persona:, res:, body: }
-async function postPersona(service) {
-    if( DEBUG ) console.log( 'postPersona()', service );
-...
-
-    if( !persona ) {
-        util.signalError( new Error('Could not find specified persona') );
-        return;
-    }
-
-    let body = Buffer.from( JSON.stringify(persona,null,4) );
-    let contentPath = 'personas/' + persona.pid + '/persona.json';
-    let result = await net.putPersonaFile(persona.pid,service,'persona.json',body,"application/json",contentPath); 
-    result.persona = persona;
-    return result;
+    return service;
 }

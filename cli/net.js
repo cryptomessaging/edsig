@@ -18,18 +18,18 @@ module.exports = {
 // Persona wrappers around get and put files
 //
 
-// pid - is root pid (for now, later a full keypath)
-// service - is the full service object from our local .cryptomessaging dir
-// subPersonaPath - is the PATH below the controller url + personas + pid, it's 
-// relative to the posters persona directory and CANNOT start with a slash.
-// file - a Buffer
-// contentPath - OPTIONAL anchor point for the certificate
-async function putPersonaFile(pid,service,subPersonaPath,file,contentType,contentPath) {
-    // RELATIVE (no leading slash) path under controller URL
-    const viewpath = 'personas/' + pid + '/' + subPersonaPath;
-    return putFile(pid,service,viewpath,file,contentType,contentPath);
+/**
+ * Puublish a persona to a service.
+ * @param {object} persona - Persona to publish
+ * @param {object} service - Service to publish to.
+ */
+async function putPersonaFile(persona,service) {
+    let file = Buffer.from( util.stringify(persona) );
+    const viewpath = 'personas/' + persona.pid + '/persona.json';
+    let result = await putFile(persona.pid,service,viewpath,file,'application/json',viewpath);
+    console.log( 'Persona published to:', result.viewurl );
+    return result;
 }
-
 
 //
 // Get files from services
@@ -59,12 +59,15 @@ async function getFile(url,service) {
     }; 
 }
 
-// pid - is root pid (for now, later a full keypath)
-// service - is the full service object from our local .cryptomessaging dir
-// path - path under the service
-//      relative to the posters persona directory and CANNOT start with a slash.
-// file - a Buffer
-// contentPath - OPTIONAL anchor point for the certificate
+/**
+ * Push a file onto a service.
+ * @param {string} pid - PID of persona sending file
+ * @param {object} service - OPTIONAL, the full service object from our local .cryptomessaging dir
+ * @param {string} path - full url when no service, or relative path under the provided service
+ * @param {Buffer} file - a Buffer containing the file
+ * @param {string} contentType
+ * @param {string} contentPath - OPTIONAL anchor path used by the certificate
+ */
 async function putFile(pid,service,path,file,contentType,contentPath) {
 
     // What is the base URL of the controller for this edge cache?
@@ -134,11 +137,9 @@ function httpRequest(options) {
 
 // baseViewUrl MUST be a URL with no pathname or query string.
 function fetchServiceInfo(baseViewUrl) {
-    if( global.DEBUG ) console.log('fetchServiceInfo()',baseViewUrl);
-    
     return new Promise((resolve,reject)=>{
         const options = { url:new URL( 'service.json', baseViewUrl ).href };
-        if( global.DEBUG ) console.log('request() options', options );
+        if( global.DEBUG ) console.log('fetchServiceInfo() options', options );
         request( options, (err,res,body) => {
             if(err)
                 reject(err);

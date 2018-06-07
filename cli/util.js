@@ -11,6 +11,10 @@ exports.signalError = function(err) {
     process.exit(1);
 }
 
+exports.stringify = function(obj) {
+    return JSON.stringify(obj,null,4);
+}
+
 //
 // Matching
 // Find personas and services by partial names or ids

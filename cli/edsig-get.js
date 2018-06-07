@@ -5,31 +5,25 @@ const util = require('./util')
 const Options = require('./options')
 const net = require('./net')
 const { URL } = require('url') // Node 8!
-var program = require('commander')
 
+var program = Options.setup( require('commander') )
+let acted;
 program
     .arguments('<url>')
     .description('Get a file from a cryptomessaging service')
-    .option('-s, --service <service>', 'Service to get file from, for relative urls')
-    .option('-n, --nickname <nickname>', 'Nickname of persona to fetch file from')
-    .option('-p, --pid <pid>', 'Persona id' )
     .option('-c, --certificate <certificate>', 'Save the certificate')
-    .option('-v, --verbose', 'Verbose mode for debugging')
-    .option('-d, --debug', 'Ultra verbose mode for debugging')
     .action(function(url) {
-        doAction(url,program)
-        .then( result => {
-            if( global.VERBOSE )
-                console.log( 'Content:', result.body );
-            else
-                console.log( result.body );
-        }).catch(err => {
+        acted = true;
+        handleAction(url).catch(err => {
             util.signalError(err);
         });
     })
     .parse(process.argv);
 
-async function doAction(url,program) {
+if( !acted )
+    program.help();
+
+async function handleAction(url) {
     // lookup service, if any
     let { persona, service } = new Options(program);
 
@@ -58,5 +52,8 @@ async function doAction(url,program) {
             throw new Error('File was not certified');
     }
     
-    return result; 
+    if( global.VERBOSE )
+        console.log( 'Content:', result.body );
+    else
+        console.log( result.body );
 }

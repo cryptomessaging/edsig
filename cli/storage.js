@@ -40,6 +40,8 @@ function findServiceByName(name) {
 
     if( global.DEBUG )
         console.log( 'Using service:', found[0].item.service.name );
+    else if( global.VERBOSE )
+        console.log( 'Using service:', util.stringify( found[0] ) );
 
     return found[0].item;
 }
@@ -77,10 +79,15 @@ function findPersonaByPid(partialpid) {
     if( found.length > 1 )
         throw new Error( 'Multiple personas found: ' + found.join(', ') );
 
-    if( global.DEBUG )
-        console.log( 'Using persona:', found[0].nickname );
-
+    logPersona( found[0] );
     return loadPersona(found[0]);
+}
+
+function logPersona(persona) {
+    if( global.DEBUG )
+        console.log( 'Using persona:', util.stringify( persona ) );
+    else if( global.VERBOSE )
+        console.log( 'Using persona:', persona.nickname );    
 }
 
 // find the closest matching persona by nickname
@@ -107,9 +114,7 @@ function findPersonaByNickname(nickname) {
         throw new Error( 'WARNING: Multiple personas found: ' + duplicates.join(', ') );
     }
 
-    if( global.DEBUG )
-        console.log( 'Using persona:', found[0].nickname );
-
+    logPersona( found[0] );
     return found[0];
 }
 
