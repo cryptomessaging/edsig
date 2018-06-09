@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 
-const { randomBytes } = require('crypto')
-const EdDSA = require('elliptic').eddsa
-const ec = new EdDSA('ed25519')
 const path = require('path')
 const Options = require('./options')
 const edsig = require('../index')
@@ -38,6 +35,4 @@ async function handleAction(nickname) {
     if( program.image )
         persona.images = [ path.basename(imagePath) ];
     storage.savePersona(persona, secrets, program.image);
-
-    console.log( 'Secrets:', JSON.stringify(secrets,null,4) );  
 }

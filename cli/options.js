@@ -28,6 +28,7 @@ module.exports = class Options {
             .option('-p, --pid <pid>', 'Use the persona that has this PID' )
             .option('-v, --verbose', 'Verbose mode for debugging')
             .option('-d, --debug', 'Ultra verbose mode for debugging')
+            .option('-c, --certify <filename>', 'Provide a certificate for the content')
 
         return program;
     }

@@ -2,9 +2,9 @@
 
 Edwards-curve based cryptographic HTTP authorization and certification SDK for Node.js and command line tools.
 
-The SDK can be used to build clients or servers that allow users to authenticate HTTP requests using public key based identities created on a smartphone or laptop.  Additionally the library supports certifying content using the same public keys, so that content can be distributed using web servers and edge caching networks.
+The SDK can be used to build cryptomessaging clients or services that authenticate HTTP requests using public key based identities created on a smartphone or laptop.  Additionally the library supports certifying content using the same public keys, so that content can be distributed using ordinary web servers and edge caching networks.
 
-A command line interface is included, to help programmers quickly learn how EdSig works, and for interacting with EdSig based services.  A sample persona service is available at https://personas.cryptomessaging.org
+A command line interface is included to help programmers quickly learn how EdSig works, and for interacting with EdSig based services.  A sample persona service is available at [https://personas.cryptomessaging.org](https://personas.cryptomessaging.org)
 
 
 ## Quickstart
@@ -16,7 +16,7 @@ Assuming you are using a Mac and have Node.js 8+ installed, install the command 
 $ npm install edsig -g
 </pre>
 
-Instead of each user having one account, Cryptomessaging supports personas and each person can have many.  To create your first persona nicknamed 'Satoshi':
+Instead of each user having only one account, Cryptomessaging supports personas and each person can have many of them.  To create your first persona nicknamed 'Satoshi':
 <pre>
 $ edsig persona create Satoshi
 </pre>
@@ -64,9 +64,9 @@ Content: {
 In the above example output:
 
 * **Content** is the raw file coming back from the server 
-* **Certified?** is the details about the certification presented from the service
-* **"headers"** are the raww HTTP headers presented by the service, and used by EdSig to verify the content
-* **x-certification** is the EdSig HTTP header presented by the service and containing the cryptographic signature of the content
+* **Certified?** are the details about the certification presented from the persona service
+* **"headers"** are the raw HTTP headers presented by the persona service, and used by EdSig to verify the content
+* **x-certification** is the EdSig HTTP header presented by the persona service and containing the cryptographic signature of the content
 
 ## SDK Installation
 
@@ -81,29 +81,18 @@ $ npm install edsig --save
 
 ## Command Line Interface Examples
 
-Create a new persona with a nickname "Satoshi" on your local computer.  The resulting files are stored on your computer under the ~/.cryptomessaging directory.  A persona is one version of yourself, such as your role as a parent, or the way you are around your old college friends.  You can create as many personas as you want, and they are all kept completely separate.
+For the following commands to work, make sure you have:
+1. Joined the Alpha persona service using the "edsig join" command from the Quickstart above
+2. Added your Satoshi persona to the Alpha persona service
+
+Download the real Satoshi Nakamoto's photo from the Alpha persona service:
 <pre>
-$ edsig persona create Satoshi
+$ edsig get images/nakamoto.jpg
 </pre>
-
-Join the "Alpha" persona service at cryptomessaging.org and upload your new Satoshi persona.  The following command remembers the "Alpha Persona Service" on your local computer and allows you to refer to it by name, such as "-s alpha".
-<pre>
-$ edsig join https://personas.cryptomessaging.org --nickname Satoshi
-</pre>
-
-Fetch the persona.json file you just uploaded in the last example.  Copy the URL printed after the last example and substitute it into the example below:
-<pre>
-$ edsig get -s alp personas/-E0MwwjCx1JOLBo6q0yUn4w9KyDEV5xUdBUiPy-k8hI/persona.json --save-sig persona.json.edsig
-</pre>
-
-
-### Managing Persona Files on a Persona Service
-
-For the following commands to work, make sure you have joined the Alpha service using the "edsig join" command and added your Satoshi persona to the Alpha service.
 
 Upload the hawaii.jpg image to your persona on the Alpha service.  Note that --nickname only requires a case-insensitive partial match, so lowercase "sat" matches "Satoshi".  The --service also matches partial service names.
 <pre>
-$ edsig persona put ~/mypictures/hawaii.jpg images/hawaii.jpg --nickname sat --service alpha
+$ edsig put ~/mypictures/hawaii.jpg images/hawaii.jpg --nickname sat --service alpha
 </pre>
 
 Delete a file from a persona service.  The filename is relative to your personas directory.  The shorthand version of --nickname is -n

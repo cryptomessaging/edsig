@@ -1,3 +1,4 @@
+
 /**
  * Unified error reporting for the command line tool.  The the global
  * DEBUG is true the stack trace will also be displayed.

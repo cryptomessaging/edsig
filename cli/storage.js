@@ -18,6 +18,7 @@ module.exports = {
     findServiceByName: findServiceByName,
     findPersonaByPid: findPersonaByPid,
     findPersonaByNickname: findPersonaByNickname,
+    bestPersonasByNickname: bestPersonasByNickname,
     loadPersona: loadPersona,
     loadPersonaSecrets: loadPersonaSecrets,
     savePersona: savePersona,
@@ -39,9 +40,9 @@ function findServiceByName(name) {
         throw new Error('Failed to find service with name ' + name );
 
     if( global.DEBUG )
-        console.log( 'Using service:', found[0].item.service.name );
-    else if( global.VERBOSE )
         console.log( 'Using service:', util.stringify( found[0] ) );
+    else if( global.VERBOSE )
+        console.log( 'Using service:', found[0].item.service.name );
 
     return found[0].item;
 }
@@ -90,8 +91,12 @@ function logPersona(persona) {
         console.log( 'Using persona:', persona.nickname );    
 }
 
-// find the closest matching persona by nickname
-function findPersonaByNickname(nickname) {
+/**
+ * Find the personas that match a partial nickname.
+ * @param {string} nickname
+ * @return {Array} zero or more persona matches, ordered by the best match. 
+ */
+function bestPersonasByNickname(nickname) {
     nickname = nickname.toLowerCase();
 
     let found = [];
@@ -105,6 +110,13 @@ function findPersonaByNickname(nickname) {
                 found.push(persona);
         }
     });
+
+    return found;  
+}
+
+// find the closest matching persona by nickname
+function findPersonaByNickname(nickname) {
+    let found = bestPersonasByNickname(nickname);
 
     if( found.length == 0 )
         throw new Error( 'WARNING: Failed to find persona with nickname containing ' + nickname );
@@ -134,7 +146,7 @@ function loadPersonaSecrets(pid) {
 function savePersona(persona,secrets,imagePath) {
     // make sure the image exists
     if( imagePath && fs.existsSync( imagePath ) != true )
-        return util.signalError( new Error( "Image doesn't exist" ) );
+        return util.signalError( new Error( "Image doesn't exist at " + imagePath ) );
 
     // make sure my persona directory is set up
     const configdir = ensureDir( path.join( HOME_DIR, '.cryptomessaging' ) );
@@ -142,27 +154,29 @@ function savePersona(persona,secrets,imagePath) {
     const mypersonadir = ensureDir( path.join( personasdir, persona.pid ) );
 
     // write pretty JSON
-    const filename = saveJson(persona,mypersonadir,'persona.json');
-    saveJson(secrets,mypersonadir,'secrets.json');
+    saveJson(persona,mypersonadir,'persona.json','persona');
+    saveJson(secrets,mypersonadir,'secrets.json','secrets');
 
     // copy image?
     if( imagePath ) {
         const imagesdir = ensureDir( path.join( mypersonadir, 'images' ) );
         const dest = path.join( imagesdir, persona.images[0] );
         fs.copyFileSync( imagePath, dest );
+        console.log( 'Copied', imagePath, 'to', dest );
     }
-
-    console.log( 'Created persona:', JSON.stringify(persona, null, 4), 'at', filename );
 }
 
 //
 // Utility
 //
 
-function saveJson(obj,dir,filename) {
+function saveJson(obj,dir,filename,label) {
     const json = JSON.stringify(obj, null, 4);
     const fullpath = path.join( dir, filename )
     fs.writeFileSync( fullpath, json );
+
+    if( label )
+        console.log( 'Saved', label + ':', JSON.stringify(obj, null, 4), 'at', fullpath );
     return fullpath; 
 }
 

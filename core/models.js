@@ -2,24 +2,6 @@ const EdDSA = require('elliptic').eddsa
 const ec = new EdDSA('ed25519')
 const util = require('./util')
 
-const DEBUG = false;
-
-/** 
- * Verification result from both verifyRequestSignature()
- * and verifyContentSignature() methods. 
- */
-exports.VerificationResult = class {
-    /**
-     * Create an EdSig verification result for the given pid.
-     * @param {string} pid - A base64url encoded public key representing the persona id that
-     *  signed the request or content.
-     */
-    constructor(pid) {
-        this.type = 'edsig';
-        this.pid = pid;
-    }
-}
-
 /**
  * Provides a subset of the Node.js Request Module, which is useful for
  * passing around basic HTTP request values.
@@ -38,18 +20,55 @@ exports.HttpRequest = class {
     }
 }
 
+/**
+ * Encapsulates a Cryptomessaging keypath of the form <rootkey>[:subkey][@host1[,host2[...,hostN]]]
+ */
+exports.Keypath = class Keypath {
+
+    constructor(keypath) {
+        const tokens = keypath.split('@');
+        this.hosts = tokens.length > 1 ? tokens[1].split(',') : [];
+        this.keys = tokens[0].split(':');
+    }
+
+    /** Provides the persona id. */
+    pid() {
+        return this.keys[0];
+    }
+
+    /** Provides the key used for cryptography. */
+    key() {
+        return this.keys[ this.keys.length - 1 ]; 
+    }
+
+    toString() {
+        return this.keys.join(':')
+            + (this.hosts.length > 0 ? '@' : '')
+            + this.hosts.join(',');
+    }
+
+    static toPid( keypath ) {
+        return keypath.split(/[:@]+/)[0];
+    }
+}
+
 /** Contains the parsed values from an EdSig signature header */
 exports.Signature = class Signature {
+
     /**
      * Create an EdSig Signature from the parsed values.
      * @param {Keypair} pubkey - Public Elliptic keypair
      * @param {} sighex - The signature in hexadecimal
-     * @param {string} keypath - A simple pid, or complex <pid>:<subkey>@host1,host2,..hostN
+     * @param {Keypath} keypath - A simple pid, complex <pid>:<subkey>@host1,host2,..hostN or Keypath object.
      */
     constructor(pubkey,sighex,keypath) {
         this.pubkey = pubkey;
         this.sighex = sighex;
-        this.keypath = keypath;
+
+        if( typeof keypath === 'string' )
+            this.keypath = new Keypath(keypath);
+        else
+            this.keypath = keypath;
     }
 
     /**
@@ -66,6 +85,9 @@ exports.Signature = class Signature {
             return;
         }
 
+        if( global.DEBUG )
+            console.log( 'Parsing signature:', signature );
+
         const authFields = signature.split(/\s+/);
         if( authFields[0] != 'EdSig' ) {
             throw new util.CodedError([4],'Unsupported auth scheme ' + authFields[0] + ' in ' + name );
@@ -75,9 +97,8 @@ exports.Signature = class Signature {
 
         // extract public key from authorization header
         const kvset = util.asKVset( authFields[1] );
-        const keypath = kvset.kp.split(':'); // rootkey[:sigkey]
-        const rootkey = keypath[0]; // NOTE: rootkey and pid are the same thing
-        const pubhex = Buffer.from(rootkey, 'base64').toString('hex');  // ec wants hex, so convert from base64url to hex 
+        const keypath = new exports.Keypath( kvset.kp );
+        const pubhex = Buffer.from( keypath.key(), 'base64').toString('hex');  // ec wants hex, so convert from base64url to hex 
         const pubkey = ec.keyFromPublic(pubhex, 'hex');
 
         // extract 512 bit request signature from authorization header

@@ -14,5 +14,8 @@ program
     .command('join', 'Join a persona, group, or push service')
     .command('get', 'Fetch a file from a persona service')
     .command('put', 'Publish a file to a persona service')
+    .command('demo', 'Change to a tmp directory and copy in demo files')
+    .command('sign', 'Create a certificate for a file' )
+    .command('verify', 'Verify a certified file')
     .parse(process.argv);
     

@@ -6,6 +6,7 @@ const { randomBytes } = require('crypto')
 module.exports = {
     createPersona: createPersona,
     keypairFromSecret: keypairFromSecret,
+    keypairToPid: keypairToPid,
     addContentHeaders: addContentHeaders,
     base64url: base64url,
     normalizeHeaders: normalizeHeaders,
@@ -24,8 +25,19 @@ module.exports = {
  * @private
  */
 function addContentHeaders(headers,body) {
-    headers['content-length'] = body ? body.length : 0;
-    headers['x-content-hash'] = hashBody( body );
+    let length = body ? body.length : 0;
+    let hash = hashBody( body );
+
+    if( global.DEBUG ) {
+        if( headers['x-content-hash'] != hash )
+            console.log( 'WARNING: x-content-hash header value', headers['x-content-hash'], 'doesn\'t match actual value', hash );
+        let declaredLength = headers['content-length'];
+        if( declaredLength && declaredLength != length )
+            console.log( 'WARNING: content-length header value', declaredLength, 'doesn\'t match actual value', length );
+    }
+
+    headers['content-length'] = length;
+    headers['x-content-hash'] = hash;
 }
 
 /**
@@ -88,6 +100,16 @@ function keypairFromSecret(secret) {
 }
 
 /**
+ * Extract public key bytes to make a simple <pid> keypath.
+ * @param {Keypair} keypair - Secret key keypair.
+ * @return {string} Simple keypath of only the persona id.
+ */
+function keypairToPid(keypair) {
+    let pubbytes = Buffer.from( keypair.getPublic() );
+    return base64url( pubbytes );
+}
+
+/**
  * Provides an HTTP ready representation of the CRC32C hash of the body.
  * @param {Buffer} body - Body can be a buffer or string
  * @return {string}
@@ -137,14 +159,14 @@ function trim(x) {
 }
 
 /** 
- * Convert a string of the form key1=value1,key2=value2 to an object with same properties.
+ * Convert a string of the form key1=value1;key2=value2 to an object with same properties.
  * @param {string} s - Source key-value set.
  * @return {object} The result as an object representing the map.
  * @private
  */
 function asKVset(s) {
     var result = {};
-    s.split(',').forEach( x => {
+    s.split(';').forEach( x => {
         var p = x.indexOf('=');
         if( p > -1 ) {
             var key = trim(x.substring(0,p));

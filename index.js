@@ -1,18 +1,22 @@
-const authorization = require('./core/authorization');
-const certification = require('./core/certification');
-const util = require('./core/util');
+const authorization = require('./core/authorization')
+const certification = require('./core/certification')
+const util = require('./core/util')
+const models = require('./core/models')
 
 module.exports = {
     // Authorizing HTTP requests
     createAuthorization: authorization.createAuthorization,
     addAuthorization: authorization.addAuthorization,
-    verifyRequestSignature: authorization.verifyRequestSignature,
+    verifyAuthorization: authorization.verifyAuthorization,
 
     // Certifying content
-    createCertification: certification.createCertification,
+    createContentCertificate: certification.createContentCertificate,
     addCertification: certification.addCertification,
-    verifyContentSignature: certification.verifyContentSignature,
+    //addCertification: certification.addCertification,
+    verifyCertification: certification.verifyCertification,
 
+    // Utility
+    Keypath: models.Keypath,
     createPersona: util.createPersona,
     keypairFromSecret: util.keypairFromSecret,
     base64url: util.base64url,

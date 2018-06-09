@@ -1,37 +1,54 @@
 const util = require('./util');
-const { Signature, VerificationResult } = require('./models');
+const { Signature } = require('./models');
 
 module.exports = {
     createAuthorization: createAuthorization,
     addAuthorization: addAuthorization,
-    verifyRequestSignature: verifyRequestSignature
+    verifyAuthorization: verifyAuthorization
 };
 
 /** 
- * Verify an HTTP request signature that was signed using an EdSig authorization header.
+ * Authorization result from verifyRequestAuthorization()
+ */
+class AuthorizationResult {
+    /**
+     * Create an EdSig authorization result for the given pid.
+     * @param {Keypath} keypath - A Keypath with at least the root key that
+     *  signed the request.  Can be a simple pid, or a complex rootkey:subkey@host1,host2.
+     */
+    constructor(keypath) {
+        this.type = 'edsig';
+        this.keypath = keypath;
+    }
+}
+
+/** 
+ * Verify an HTTP request that was signed using an EdSig authorization header.
  * @param {string} path - pathname of request including query string.  I.e. http://mydomain.com/pathname?querystring
  * @req {HttpRequest} req - Node like Request structure containing method, headers, and body proeprties
- * @return {VerificationResult} - when authorization succeeds, or null when no authorization header presented
+ * @return {AuthorizationResult} - when authorization succeeds, or null when no authorization header presented
  * @throws Error when authorization header is present, but signature check fails
  */
-function verifyRequestSignature(path,req) {
+function verifyAuthorization(path,req) {
     // crack open the authorization header to get the public key and signature
-    let authorization = Signature.parse(req.headers,'authorization');
-    if( !authorization )
+    let auth = Signature.parse( req.headers, 'authorization' );
+    if( !auth )
         return;  // it's ok!
 
     // make sure content-length and x-content-hash match body
-    util.addContentHeaders(req.headers,req.body);
+    util.addContentHeaders( req.headers, req.body );
 
     // verify specific EdSig request headers
     let summaryBytes = reqSummaryToBytes( req.method, path, req.headers );
-    let success = authorization.pubkey.verify(summaryBytes, authorization.sighex);
+    let success = auth.pubkey.verify( summaryBytes, auth.sighex );
 
-    if( global.VERBOSE) console.log( 'Verified?', success );
+    if( global.VERBOSE )
+        console.log( 'Verified?', success );
+
     if( success )
-        return new VerificationResult( authorization.keypath[0] );
+        return new AuthorizationResult( auth.keypath );
     else
-        throw new util.CodedError([4],'EdSig authorization check failed' );
+        throw new util.CodedError( [4],'EdSig authorization check failed' );
 }
 
 /**
@@ -80,13 +97,10 @@ function createAuthorization( path, req, keypair, keypath ) {
     var summaryBytes = reqSummaryToBytes( req.method, path, req.headers );
     var sigbytes = Buffer.from( keypair.sign(summaryBytes).toBytes() );
 
-    if( !keypath ) {
-        // extract public key bytes to make a simple <pid> path
-        let pubbytes = Buffer.from( keypair.getPublic() );
-        keypath = util.base64url(pubbytes);
-    }
+    if( !keypath )
+        keypath = util.keypairToPid( keypair );
 
-    let edsig = 'EdSig kp=' + keypath + ',sig=' + util.base64url(sigbytes);
+    let edsig = 'EdSig kp=' + keypath + ';sig=' + util.base64url(sigbytes);
     if( global.VERBOSE) console.log( 'Created authorization:', edsig );
     return edsig;
 }

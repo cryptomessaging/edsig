@@ -1,0 +1,10 @@
+{
+    "type": "edsig",
+    "headers": {
+        "content-type": "image/jpeg",
+        "content-length": 110393,
+        "x-content-hash": "CRC32C 14f6c482",
+        "x-content-created": "2018-06-08T19:07:46.673Z",
+        "x-certification": "EdSig kp=GxsBiN4njPNsgg1K_HotDnabcJaXuX8Re_Mee8lIiZ4;sig=sDuFebrL9ioFyEKRy9SNwOfcA-e2wFZB1-uD8gjIZrpg4JgS5hSbL0NXeVHSTMgrqJQAtzfEDMD5nAG6NymYDQ"
+    }
+}

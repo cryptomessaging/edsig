@@ -19,9 +19,10 @@
     "license": "GPL-3.0-or-later",
     "dependencies": {
         "commander": "^2.15.1",
-        "request": "^2.86.0",
         "elliptic": "^6.4.0",
-        "fast-crc32c": "^1.0.4"
+        "fast-crc32c": "^1.0.4",
+        "mime-types": "^2.1.18",
+        "request": "^2.86.0"
     },
     "devDependencies": {
         "jsdoc-to-markdown": "^4.0.1"
