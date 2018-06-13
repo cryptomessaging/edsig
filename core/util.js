@@ -1,6 +1,6 @@
 const EdDSA = require('elliptic').eddsa
 const ec = new EdDSA('ed25519')
-const crc32c = require('fast-crc32c')
+const jsSHA = require("jssha")
 const { randomBytes } = require('crypto')
 
 module.exports = {
@@ -11,7 +11,8 @@ module.exports = {
     base64url: base64url,
     normalizeHeaders: normalizeHeaders,
     asKVset: asKVset,
-    CodedError: CodedError
+    CodedError: CodedError,
+    hashBody: hashBody
 };
 
 //
@@ -109,23 +110,41 @@ function keypairToPid(keypair) {
     return base64url( pubbytes );
 }
 
+function toArrayBuffer(buf) {
+    var ab = new ArrayBuffer(buf.length);
+    var view = new Uint8Array(ab);
+    for (var i = 0; i < buf.length; ++i) {
+        view[i] = buf[i];
+    }
+    return ab;
+}
+
 /**
  * Provides an HTTP ready representation of the CRC32C hash of the body.
- * @param {Buffer} body - Body can be a buffer or string
- * @return {string}
+ * @param {Buffer} body - Body can be a buffer or string, (or null!)
+ * @return {string} usable for HTTP header 'x-content-hash' and including hashing algo used (i.e. 'SHA3-256')
  * @private
  */
 function hashBody(body) {
     if( !body )
-        body = new Buffer();
+        body = new Buffer();    // allow empty bodies
     else if( typeof body === 'string' )
         body = Buffer.from( body );
     else if( body instanceof Buffer )
         ;   // perfect that way it came!
     else
-        throw new CodedError([5],'Body is not a Buffer or String, but a ' + typeof body );
+        throw new CodedError([5],'Body is not a Buffer, String, or null - it\'s a ' + typeof body );
 
-    return 'CRC32C ' + crc32c.calculate( body ).toString(16);
+    let start = Date.now();
+    hasher = new jsSHA("SHA3-256", "ARRAYBUFFER");
+    hasher.update( toArrayBuffer(body) );
+    hash = hasher.getHash("HEX");
+    let duration = Date.now() - start;
+    let base64hash = base64url( Buffer.from(hash,'hex') );
+    if( global.DEBUG )
+        console.log( 'jsSHA SHA3-256 hash of', body, 'in', duration + 'ms', 'is:', hash, 'base64url:', base64hash );
+
+    return 'SHA3-256 ' + base64hash;
 }
 
 //

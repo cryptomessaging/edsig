@@ -20,5 +20,6 @@ module.exports = {
     createPersona: util.createPersona,
     keypairFromSecret: util.keypairFromSecret,
     base64url: util.base64url,
-    CodedError: util.CodedError
+    CodedError: util.CodedError,
+    hashBody: util.hashBody
 };

@@ -20,7 +20,7 @@
     "dependencies": {
         "commander": "^2.15.1",
         "elliptic": "^6.4.0",
-        "fast-crc32c": "^1.0.4",
+        "jssha": "^2.3.1",
         "mime-types": "^2.1.18",
         "request": "^2.86.0"
     },
