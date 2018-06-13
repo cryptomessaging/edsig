@@ -1,10 +1,12 @@
 {
     "type": "edsig",
+    "keypath": "GxsBiN4njPNsgg1K_HotDnabcJaXuX8Re_Mee8lIiZ4",
     "headers": {
-        "content-type": "image/jpeg",
+        "x-certification": "EdSig kp=GxsBiN4njPNsgg1K_HotDnabcJaXuX8Re_Mee8lIiZ4;sig=dGQxFnCCsjKck2758XbPDG_lRj7Vcg-JL38Z7aYG9sVbjQj2G-_ezc8aA5Phn53LMMPhrGiTCaWfJVHvx7FcCA",
         "content-length": 110393,
-        "x-content-hash": "CRC32C 14f6c482",
-        "x-content-created": "2018-06-08T19:07:46.673Z",
-        "x-certification": "EdSig kp=GxsBiN4njPNsgg1K_HotDnabcJaXuX8Re_Mee8lIiZ4;sig=sDuFebrL9ioFyEKRy9SNwOfcA-e2wFZB1-uD8gjIZrpg4JgS5hSbL0NXeVHSTMgrqJQAtzfEDMD5nAG6NymYDQ"
+        "content-type": "image/jpeg",
+        "x-content-created": "2018-06-13T23:16:16.714Z",
+        "x-content-hash": "SHA3-256 3dFTpawwtuDjJY8oOAiWyv_JvIrpOGjR1_oEwTgAGGg",
+        "x-content-path": "personas/GxsBiN4njPNsgg1K_HotDnabcJaXuX8Re_Mee8lIiZ4/resume/university-diploma.jpg"
     }
 }
