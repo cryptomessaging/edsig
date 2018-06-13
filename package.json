@@ -1,6 +1,6 @@
 {
     "name": "edsig",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "description": "EdSig library and command line tool for generating EdSig requests to Cryptomessaging services",
     "main": "index.js",
     "scripts": {
