@@ -111,8 +111,8 @@ function addCertificationHeaders( contentPath, headers, body, keypair, keypath )
     // do a crc32c of the body and add to request
     util.addContentHeaders(headers,body);
 
-    if( !headers['x-created'] )
-        headers['x-created'] = (new Date()).toISOString();
+    if( !headers['x-content-created'] )
+        headers['x-content-created'] = (new Date()).toISOString();
 
     if( contentPath )
         headers['x-content-path'] = contentPath;

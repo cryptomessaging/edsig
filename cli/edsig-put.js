@@ -10,7 +10,6 @@ const net = require('./net')
 const edsig = require('../index')
 const Options = require('./options')
 
-
 const HOME_DIR = require('os').homedir();
 const PERSONAS_DIR = path.join( HOME_DIR, '.cryptomessaging', 'personas' );
 
@@ -51,7 +50,7 @@ async function handleAction(filename,url) {
         if( global.VERBOSE )
             console.log( 'Guessing content-type of', contentType, 'for file', filename );
     }
-
+    
     let result = await net.putFile(pid,options.service,path,file,contentType,contentCertification);
     console.log( 'Posted to:', result.viewurl );
 }
