@@ -46,8 +46,7 @@ async function getFile(url,service) {
 async function putPersonaFile(persona,service) {
     let file = Buffer.from( util.stringify(persona) );
     const viewpath = 'personas/' + persona.pid + '/persona.json';
-    let certification = { contentPath: viewpath };
-    let result = await putFile( persona.pid, service, viewpath, file, 'application/json', certification );
+    let result = await putFile( persona.pid, service, viewpath, file, 'application/json', viewpath );
     console.log( 'Persona published to:', result.viewurl );
     return result;
 }
@@ -58,11 +57,11 @@ async function putPersonaFile(persona,service) {
  * @param {object} service - OPTIONAL, the full service object from our local .cryptomessaging dir
  * @param {string} path - full url when no service, or relative path under the provided service
  * @param {Buffer} file - a Buffer containing the file
- * @param {object} certification - options for certification, either with a contentPath property, or a
- *   full ContentCertification object 
- * @param {string} contentPath - OPTIONAL anchor path used by the certificate
+ * @param {string} contentType - MIME content type
+ * @param {string} certificationPath - OPTIONAL partial path (or full url) used when creating content certification
+ * @param {object} certification - OPTIONAL full ContentCertification object 
  */
-async function putFile(pid,service,path,file,contentType,certification) {
+async function putFile(pid,service,path,file,contentType,certificationPath,certification) {
 
     // What is the base URL of the controller for this edge cache?
     // (Requires trailing slash)
@@ -88,8 +87,10 @@ async function putFile(pid,service,path,file,contentType,certification) {
     };
     edsig.addAuthorization( url.pathname, req, keypair );
 
-    if( certification ) 
-        edsig.addCertification( certification, req, keypair );
+    if( certification )
+        edsig.mergeCertificationHeaders( certification, req );
+    else
+        edsig.addCertificationHeaders( certificationPath || path, req.headers, req.body, keypair ); 
 
     // post request to server
     const options = {

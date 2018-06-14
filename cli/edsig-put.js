@@ -38,19 +38,21 @@ async function handleAction(filename,url) {
     let pid = options.persona.pid;
     let path = 'personas/' + pid + '/' + url;
     let file = fs.readFileSync( filename );
+    
     let contentType;
-    let contentCertification;
+    let certificationPath;
+    let certification;
     if( program.certification ) {
         let json = fs.readFileSync( program.certification );
-        contentCertification = JSON.parse( json );
-        contentType = contentCertification.headers['content-type'];
+        certification = JSON.parse( json );
+        contentType = certification.headers['content-type'];
     } else {
-        contentCertification = { contentPath: path };
+        certificationPath = path;
         contentType = mime.lookup( filename );
         if( global.VERBOSE )
             console.log( 'Guessing content-type of', contentType, 'for file', filename );
     }
     
-    let result = await net.putFile(pid,options.service,path,file,contentType,contentCertification);
+    let result = await net.putFile(pid,options.service,path,file,contentType,certificationPath,certification);
     console.log( 'Posted to:', result.viewurl );
 }

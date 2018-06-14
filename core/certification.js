@@ -2,8 +2,8 @@ const util = require('./util');
 const { Signature } = require('./models');
 
 module.exports = {
-    //addCertificationHeaders: addCertificationHeaders,
-    addCertification: addCertification,
+    addCertificationHeaders: addCertificationHeaders,
+    mergeCertificationHeaders: mergeCertificationHeaders,
     createContentCertificate: createContentCertificate,
     verifyCertification: verifyCertification
 };
@@ -43,7 +43,7 @@ function verifyCertification(path,req) {
     let certification = Signature.parse(req.headers,'x-certification');
     if( !certification ) {
         if( global.VERBOSE )
-            console.log( 'Certified? No' );
+            console.log( 'Certification: None provided' );
         return null;
     }
 
@@ -54,7 +54,7 @@ function verifyCertification(path,req) {
 
     let result = new ContentCertificate( certification.keypath, filter( req.headers ) );
     if( global.VERBOSE )
-        console.log( 'Certified?', JSON.stringify( result, null, 4 ) ); 
+        console.log( 'Certification:', util.stringify( result ) ); 
     return result;
 }
 
@@ -79,7 +79,7 @@ function createContentCertificate(file,contentType,keypair,keypath,contentPath) 
         keypath = util.keypairToPid( keypair );
 
     // OK for contentPath to be null
-    addCertification( { contentPath: contentPath }, req, keypair );
+    addCertificationHeaders( contentPath, req.headers, req.body, keypair, keypath );
     return new ContentCertificate( keypath, req.headers );
 }
 
@@ -89,7 +89,7 @@ function createContentCertificate(file,contentType,keypair,keypath,contentPath) 
  * @param {HttpRequest} req
  * @param {Keypair} keypair - an elliptic curve keypair
  * @param {string} keypath - OPTIONAL keypath as <pid>[:subkey][@host1[,host2[,hostN]].  When keypath is not provided, the keypair pid is used.
- */
+ *
 function addCertification( certification, req, keypair, keypath ) {
     if( !certification )
         addCertificationHeaders( null, req.headers, req.body, keypair, keypath );
@@ -97,7 +97,7 @@ function addCertification( certification, req, keypair, keypath ) {
         addCertificationHeaders( certification.contentPath, req.headers, req.body, keypair, keypath ); 
     else
         mergeCertificationHeaders( certification, req ) 
-}
+}*/
 
 /**
  * Create a certification header value.

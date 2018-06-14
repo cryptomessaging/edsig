@@ -11,8 +11,8 @@ module.exports = {
 
     // Certifying content
     createContentCertificate: certification.createContentCertificate,
-    addCertification: certification.addCertification,
-    //addCertification: certification.addCertification,
+    addCertificationHeaders: certification.addCertificationHeaders,
+    mergeCertificationHeaders: certification.mergeCertificationHeaders,
     verifyCertification: certification.verifyCertification,
 
     // Utility

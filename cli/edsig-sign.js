@@ -24,11 +24,14 @@ program
     })
     .parse(process.argv);
 
+if( !acted )
+    program.help();
+
 async function handleAction(filename,path) {
     let options = new Options(program);
 
     if( !options.persona )
-        throw new Error( 'Please specify a persona or nickname to certify this file' );
+        throw new Error( 'Please specify a persona with -p or -n to certify this file' );
 
     if( global.VERBOSE )
         console.log( 'Using persona:', options.persona );
@@ -38,13 +41,11 @@ async function handleAction(filename,path) {
     let keypair = edsig.keypairFromSecret( secrets.root.secret );
 
     let file = fs.readFileSync( filename );
-    let contentPath = path;
 
     let contentType = mime.lookup( filename );
     if( global.VERBOSE )
         console.log( 'Guessing content-type of', contentType, 'for file', filename );
 
-    //let certificate = await net.signFile(pid,file,contentType,contentPath);
-    edsig.createContentCertificate(file,contentType,keypair,pid,contentPath)
+    let certificate = edsig.createContentCertificate(file,contentType,keypair,pid,path)
     console.log( util.stringify( certificate ) );
 }

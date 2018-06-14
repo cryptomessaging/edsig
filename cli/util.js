@@ -8,7 +8,7 @@ exports.signalError = function(err) {
     if( global.DEBUG )
         console.error(err);
     else
-        console.log( err.name, err.message );
+        console.log( err.name + ':', err.message );
     process.exit(1);
 }
 

@@ -46,7 +46,7 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
     let expected = 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw;sig=QyR4DQ2a0Idyhg4jgd3lXYC_KeVdQX8TgXoGrj8-QQkuDeNi-kJvX8DwxA-YHkf4czmEN0wC5wuEHpm8KAGvDw';  
     assert.equal(actual,expected,'Authorization header is incorrect, value is', actual );
 
-    edsig.addCertification( { contentPath: contentPath }, req, root_keypair );
+    edsig.addCertificationHeaders( contentPath, req.headers, req.body, root_keypair );
     expected = 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw;sig=kBwP4kWdJ_Tdh75tfq5Abu9haY8NKNS30Mw97eUJzj1PNuPBwl3DtYiMTl8LB6fr_D2O_rgosiKMKGNasDdlAw';
     actual = req.headers['x-certification'];
     assert.equal(actual,expected,'Certification header did not match expected result, header is: ' + actual );
@@ -99,7 +99,7 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
             console.log( 'Forging header',name,'to',value);
         let {path,contentPath,req} = createRequest();
         edsig.addAuthorization( path, req, root_keypair );
-        edsig.addCertification( { contentPath: contentPath }, req, root_keypair );
+        edsig.addCertificationHeaders( contentPath, req.headers, req.body, root_keypair );
         req.headers[name] = value;
         try {
             edsig.verifyAuthorization( path, req );
@@ -147,7 +147,7 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
     let expected = 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw:GxsBiN4njPNsgg1K_HotDnabcJaXuX8Re_Mee8lIiZ4@startlinglabs.com,localhost:3030;sig=chki4jw1lURoVKsT7PhXE9N_0M3C0_v-Za5yY7tgBbrBz7duxMxTzeDk8k7v8tejYkHmtwjvOfhDJA4W9FfJCw';  
     assert.equal(actual,expected,'Subkey authorization header is incorrect, value is: ' + actual );
 
-    edsig.addCertification( { contentPath: contentPath }, req, third_party_keypair );
+    edsig.addCertificationHeaders( contentPath, req.headers, req.body, third_party_keypair );
     expected = 'EdSig kp=pUL9YNHQ39odztm9aEqjBbCwRAn0aSD3jQZAOJi8jZA;sig=VqTJNwffldPx7y5DbV-w5KTruqK91vjf7O4-EHprdYzjo_N_-ak_xOtWMMGTB3qPuPCOpvzDRtE0hGSRZcOgCQ';
     actual = req.headers['x-certification'];
     assert.equal(actual,expected,'Certification header did not match, value is: ' + actual );

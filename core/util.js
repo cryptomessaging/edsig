@@ -12,7 +12,8 @@ module.exports = {
     normalizeHeaders: normalizeHeaders,
     asKVset: asKVset,
     CodedError: CodedError,
-    hashBody: hashBody
+    hashBody: hashBody,
+    stringify: stringify
 };
 
 //
@@ -30,8 +31,9 @@ function addContentHeaders(headers,body) {
     let hash = hashBody( body );
 
     if( global.DEBUG ) {
-        if( headers['x-content-hash'] != hash )
-            console.log( 'WARNING: x-content-hash header value', headers['x-content-hash'], 'doesn\'t match actual value', hash );
+        const declaredHash = headers['x-content-hash'];
+        if( declaredHash && declaredHash != hash )
+            console.log( 'WARNING: x-content-hash header value', declaredHash, 'doesn\'t match actual value', hash );
         let declaredLength = headers['content-length'];
         if( declaredLength && declaredLength != length )
             console.log( 'WARNING: content-length header value', declaredLength, 'doesn\'t match actual value', length );
@@ -150,6 +152,11 @@ function hashBody(body) {
 //
 // Strings, etc.
 //
+
+/** Consistent readable JSON. */
+function stringify(obj) {
+    return JSON.stringify(obj,null,4);
+}
 
 /**
  * Convert a base64 buffer to a base64url string.

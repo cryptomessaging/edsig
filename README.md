@@ -21,9 +21,9 @@ Instead of each user having only one account, Cryptomessaging supports personas 
 $ edsig persona create Satoshi
 </pre>
 
-Your new persona is displayed on the screen as two JSON objects: the persona which includes public information and a globally unique identifier (the Persona ID), and the secrets which are the elliptic curve secrets for public key cryptography.  Both these files are saved in the .cryptomessaging directory under your user directory.
+Your new persona is displayed on the screen as two JSON objects: the persona which includes public information and a globally unique identifier (the persona id), and the secrets which are the elliptic curve secrets for cryptography.  Both these files are saved in the .cryptomessaging directory under your user directory.
 
-Just like email, cryptomessaging is a network of Internet services interacting with common protocols.  A core service is the persona service which shares personas publicly.  To join the demonstration persona service at https://personas.cryptomessaging.org:
+Just like email, cryptomessaging is a network of Internet services interacting with common protocols.  A core service type is a persona service which shares personas publicly.  Cryptomessaging.org provides a reference persona service at https://personas.cryptomessaging.org which can be joined with the following edsig command:
 <pre>
 $ edsig join https://personas.cryptomessaging.org -n satoshi
 </pre>
@@ -38,7 +38,7 @@ COPY DOWN the URL after "Persona published to:" and use in the next command as "
 $ edsig get http://localhost:3030/personas/1PnUQJ2zISR_ufhoABksm1b8y_BhLa9ssgWv4rFXNZY/persona.json -v
 </pre>
 
-This last command, "edsig get", demonstrates the final result.  Anyone on the Internet can request your personal persona.json file and the file they receive includes a cryptographically signed certificate proving it could only have been created by you.
+This last command, "edsig get", demonstrates the final result.  Anyone on the Internet can request your persona.json file and the file they receive includes a cryptographically signed certificate proving it could only have been created by you.
 
 Here's an example output from the last command:
 <pre>
