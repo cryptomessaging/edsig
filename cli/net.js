@@ -16,14 +16,14 @@ module.exports = {
 };
 
 // url - either full URL or relative path when service is provided
-// service - optional service to resolve relative urls
+// service - optional service to resolve relative urls with the view url
 async function getFile(url,service) {
     let options = {
         encoding: null
     };
     if( service ) {
-        let controllerUrl = extractControllerUrl(service);
-        options.url = new URL(url,controllerUrl).href;
+        let viewUrl = extractViewUrl(service);
+        options.url = new URL(url,viewUrl).href;
     } else {
         options.url = url;  // assume its a full url
     }
@@ -123,6 +123,8 @@ function httpRequest(options) {
                     console.log( 'Body for', options.url, 'code', res.statusCode, 'is', body );
                 reject( new Error('statusCode: ' + res.statusCode + ' for ' + options.url ) );
             } else {
+                if( global.DEBUG )
+                    console.log( 'Body length', body.length, 'body', body, 'res', res );
                 resolve( {url:options.url, res:res, body:body} );
             }
         });
@@ -161,6 +163,12 @@ function extractControllerUrl(service) {
      || !service.service.controller.url )
         throw new Error('Service is missing controller.url', service );
     return ensureTrailingSlash( service.service.controller.url );
+}
+
+function extractViewUrl(service) {
+    if( !service.viewurl )
+        throw new Error('Service is missing viewurl', service );
+    return ensureTrailingSlash( service.viewurl );
 }
 
 // Provides only the hostname lowercased when on standard
