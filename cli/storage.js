@@ -20,7 +20,8 @@ module.exports = {
     findPersonaByNickname: findPersonaByNickname,
     bestPersonasByNickname: bestPersonasByNickname,
     loadPersona: loadPersona,
-    loadPersonaSecrets: loadPersonaSecrets,
+    loadSecrets: loadSecrets,
+    loadSubkey: loadSubkey,
     savePersona: savePersona,
     SERVICES_FILEPATH: SERVICES_FILEPATH
 };
@@ -67,6 +68,9 @@ function saveServices(services) {
 
 // find the closest matching persona by partial pid
 function findPersonaByPid(partialpid) {
+    if( fs.existsSync( PERSONAS_DIR ) != true )
+        return [];
+    
     let found = [];
     fs.readdirSync(PERSONAS_DIR).forEach( filename => {
         if( filename.startsWith( partialpid ) ) {
@@ -98,6 +102,9 @@ function logPersona(persona) {
  */
 function bestPersonasByNickname(nickname) {
     nickname = nickname.toLowerCase();
+
+    if( fs.existsSync( PERSONAS_DIR ) != true )
+        return [];
 
     let found = [];
     fs.readdirSync(PERSONAS_DIR).forEach( filename => {
@@ -137,13 +144,19 @@ function loadPersona(pid) {
     return JSON.parse( json );
 }
 
-function loadPersonaSecrets(pid) {
+function loadSecrets(pid) {
     const filepath = path.join( PERSONAS_DIR, pid, 'secrets.json' );
     let json = fs.readFileSync( filepath );
     return JSON.parse( json );
 }
 
-function savePersona(persona,secrets,imagePath) {
+function loadSubkey(pid,subkeyId) {
+    const filepath = path.join( PERSONAS_DIR, pid, 'keyring', subkeyId + '.json' );
+    let json = fs.readFileSync( filepath );
+    return JSON.parse( json );
+}
+
+function savePersona(persona,keyring,secrets,imagePath) {
     // make sure the image exists
     if( imagePath && fs.existsSync( imagePath ) != true )
         return util.signalError( new Error( "Image doesn't exist at " + imagePath ) );
@@ -152,10 +165,16 @@ function savePersona(persona,secrets,imagePath) {
     const configdir = ensureDir( path.join( HOME_DIR, '.cryptomessaging' ) );
     const personasdir = ensureDir( path.join( configdir, 'personas' ) );
     const mypersonadir = ensureDir( path.join( personasdir, persona.pid ) );
+    const keyringdir = ensureDir( path.join( mypersonadir, 'keyring' ) );
 
     // write pretty JSON
-    saveJson(persona,mypersonadir,'persona.json','persona');
-    saveJson(secrets,mypersonadir,'secrets.json','secrets');
+    saveJson( persona, mypersonadir, 'persona.json', 'persona' );
+    saveJson( secrets, mypersonadir, 'secrets.json', 'secrets' );
+    if( keyring ) {
+        keyring.forEach( keybase => {
+            saveJson( keybase, keyringdir, keybase.id + '.json', 'keyring ' + keybase.id );
+        });
+    }
 
     // copy image?
     if( imagePath ) {

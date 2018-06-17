@@ -1,5 +1,6 @@
 const EdDSA = require('elliptic').eddsa
 const ec = new EdDSA('ed25519')
+const { randomBytes } = require('crypto')
 const util = require('./util')
 
 /**
@@ -21,7 +22,86 @@ exports.HttpRequest = class {
 }
 
 /**
- * Encapsulates a Cryptomessaging keypath of the form <rootkey>[:subkey][@host1[,host2[...,hostN]]]
+ * Base information about a public key including the type of cryptography used,
+ * the secret, and the derived public key.  Also includes housekeeping info such as the
+ * date created.
+ */
+class Keybase {
+
+    /**
+     * Create a Keybase object.
+     * @param {Buffer} secret - OPTIONAL set of 32 bytes to use as secret.
+     */
+    constructor(secret) {
+        if( !secret )
+            secret = randomBytes(32);
+        const keypair = ec.keyFromSecret(secret);
+
+        this.type = 'ed25519';
+        this.created = new Date().toISOString();
+        this.id = util.base64url( Buffer.from( keypair.getPublic() ) );
+        this.secret = util.base64url( Buffer.from( secret ) );
+    }
+
+    valid(from,to) {
+        this.valid = { from:from, to:to };
+    }
+
+    /**
+     * Returns a copy of the Keybase object with the secret property removed
+     * so it can be publicy shared.
+     */
+    withoutSecret() {
+        let result = Object.assign({},this);
+        delete result.secret;
+        return result;
+    }
+}
+exports.Keybase = Keybase;
+
+/**
+ * Persona to represent the persons nickname and a globally unique id.
+ */
+exports.Persona = class Persona {
+
+    /**
+     * Create a persona from a persona id and nickname.
+     * @param {string} pid - base64url encoded persona id
+     * @param {string} nickname
+     */
+    constructor(pid,nickname) {
+        this.pid = pid;
+        this.nickname = nickname;
+    }
+
+    /**
+     * Create a persona, keyring, and secrets from a nickname and optional secret.
+     * @param {string} nickname
+     * @param {Buffer} masterSecret - OPTIONAL, when not provided a new secret is created
+     * @param {Buffer} subkeySecret - OPTIONAL, when not provided a new secret is created
+     * @return {object} result - containing the persona, keyring, and secrets
+     */
+    static create(nickname,masterSecret,subkeySecret) {
+        const master_key = new Keybase(masterSecret);
+        const sub_key = new Keybase(subkeySecret);
+
+        // all my keys including the secrets - keep these secure!!
+        let secrets = {
+            master: master_key,
+            subkeys: {}
+        };
+        secrets.subkeys[sub_key.id] = sub_key;
+
+        return {
+            persona: new Persona(master_key.id,nickname),
+            keyring: [sub_key.withoutSecret()],
+            secrets: secrets
+        }
+    }
+}
+
+/**
+ * Encapsulates a Cryptomessaging keypath of the form <masterkey>[:subkey][@host1[,host2[...,hostN]]]
  */
 exports.Keypath = class Keypath {
 
@@ -31,12 +111,18 @@ exports.Keypath = class Keypath {
         this.keys = tokens[0].split(':');
     }
 
-    /** Provides the persona id. */
+    /**
+     * Provides the root key which is also the persona id.
+     * @return {string} base64url encoded persona id
+     */
     pid() {
         return this.keys[0];
     }
 
-    /** Provides the key used for cryptography. */
+    /**
+     * Provides the base64url encoded public key used for cryptography.
+     * @return {string} base64url encoded public key.
+     */
     key() {
         return this.keys[ this.keys.length - 1 ]; 
     }

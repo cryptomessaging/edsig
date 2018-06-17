@@ -4,7 +4,6 @@ const jsSHA = require("jssha")
 const { randomBytes } = require('crypto')
 
 module.exports = {
-    createPersona: createPersona,
     keypairFromSecret: keypairFromSecret,
     keypairToPid: keypairToPid,
     addContentHeaders: addContentHeaders,
@@ -59,33 +58,6 @@ function normalizeHeaders(headers) {
     });
 
     return headers;
-}
-
-/**
- * Create a persona and secrets from a nickname and optional secret.
- * @param {string} nickname
- * @param {Buffer} secret - OPTIONAL, when not provided a new secret is created
- * @return {object} result - containing the persona and secrets
- */
-function createPersona(nickname,secret) {
-    if( !secret )
-        secret = randomBytes(32);
-    const keypair = ec.keyFromSecret(secret);
-    const pid = base64url( Buffer.from( keypair.getPublic() ) );
-    
-    let persona = {
-        pid: pid,
-        nickname: nickname
-    };
-
-    let secrets = {
-        root: {
-            type: "ed25519",
-            secret: base64url( Buffer.from( secret ) )
-        }
-    };
-
-    return { persona:persona, secrets:secrets };
 }
 
 //

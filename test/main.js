@@ -2,7 +2,9 @@ const edsig = require('../index')
 const { randomBytes } = require('crypto')
 const EdDSA = require('elliptic').eddsa
 const ec = new EdDSA('ed25519')
-const assert = require('assert');
+const assert = require('assert')
+const storage = require('../cli/storage')
+const util = require('../core/util')
 
 global.DEBUG = true;
 global.VERBOSE = true;
@@ -33,6 +35,70 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
     expected = 'SHA3-256 _W7Zt0IaFFvHUt7lRPk7IsBO6yofhfNAdflvmHV-_KQ';
     assert.equal(hash,expected,'SHA3 hash did not match expected result, hash is: ' + hash );
 })();
+
+//
+// Creating a persona, saving, and retrieval
+//
+
+(function() {
+    const masterSecret = Buffer.from( 'AqY7tB0Lbq1yKXCZfQa6QFkiPy5WCYjUrH7ahJBUalM', 'base64' );
+    const subkeySecret = Buffer.from( 'QMy-kk6iza68y0UiJosE96xRfJkcRS_E2Hr7r4LKygI', 'base64' );
+
+    const {persona,keyring,secrets} = edsig.Persona.create('Test user',masterSecret,subkeySecret);
+    secrets.master.created = new Date('12-13-1967').toISOString();
+    const subkeyId = Object.keys( secrets.subkeys )[0];
+    const subkey = secrets.subkeys[subkeyId];
+    subkey.created = new Date('5-10-1977').toISOString();
+    keyring[0].created = subkey.created;
+
+    // verify persona
+    const expectedPersona = {
+        "pid": "ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw",
+        "nickname": "Test user"
+    };
+    assert.deepEqual(persona,expectedPersona,'Persona does not match expected result, value is: ' + util.stringify(persona) );
+
+    // verify secrets
+    const expectedSecrets = {
+        "master": {
+            "type": "ed25519",
+            "created": "1967-12-13T08:00:00.000Z",
+            "id": "ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw",
+            "secret": "AqY7tB0Lbq1yKXCZfQa6QFkiPy5WCYjUrH7ahJBUalM"
+        },
+        "subkeys": {
+            "pUL9YNHQ39odztm9aEqjBbCwRAn0aSD3jQZAOJi8jZA": {
+                "type": "ed25519",
+                "created": "1977-05-10T07:00:00.000Z",
+                "id": "pUL9YNHQ39odztm9aEqjBbCwRAn0aSD3jQZAOJi8jZA",
+                "secret": "QMy-kk6iza68y0UiJosE96xRfJkcRS_E2Hr7r4LKygI"
+            }
+        }
+    };
+    assert.deepEqual(secrets,expectedSecrets,'Secrets do no match expected result, value is: ' + util.stringify(secrets) );
+
+    // verify keyring
+    const expectedKeyring = [
+        {
+            "type": "ed25519",
+            "created": "1977-05-10T07:00:00.000Z",
+            "id": "pUL9YNHQ39odztm9aEqjBbCwRAn0aSD3jQZAOJi8jZA"
+        }
+    ];
+    assert.deepEqual(keyring,expectedKeyring,'Keyring does not match expected result, value is: ' + util.stringify(keyring) );
+
+    // save to storage, and load back in, and verify again
+    storage.savePersona(persona,keyring,secrets);
+    const persona2 = storage.loadPersona(persona.pid);
+    assert.deepEqual(persona2,expectedPersona,'Stored persona does not match expected result, value is: ' + util.stringify(persona2) );
+
+    const secrets2 = storage.loadSecrets(persona.pid);
+    assert.deepEqual(secrets2,expectedSecrets,'Stored secrets does not match expected result, value is: ' + util.stringify(secrets2) );
+
+    const subkey2 = storage.loadSubkey(persona.pid,subkeyId);
+    assert.deepEqual(subkey2,keyring[0],'Stored keybase does not match expected result, value is: ' + util.stringify(subkey2) + ' expected: ' + util.stringify(keyring[0]) );
+})();
+
 
 //
 // Basic request test

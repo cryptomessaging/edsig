@@ -6,6 +6,7 @@ const fs = require('fs')
 const path = require('path')
 const net = require('./net')
 const Options = require('./options')
+const util = require('./util')
 
 let program = Options.setup( require('commander') )
 program.parse(process.argv);
@@ -26,13 +27,14 @@ function setup() {
 
     console.log( 'Setting up EdSig demo...' );
 
-    // if there's no Satoshi persona, then create...
+    // Does Satoshi exist?
     let nBest = storage.bestPersonasByNickname('satoshi');
     let persona;
     if( nBest.length == 0 ) {
-        let created = edsig.createPersona('Satoshi');
+        // if there's no Satoshi persona, then create...
+        let created = edsig.Persona.create('Satoshi');
         persona = created.persona;
-        storage.savePersona(persona, created.secrets);
+        storage.savePersona( persona, created.keyring, created.secrets );
         console.log( '- Created new persona', persona.nickname,'with pid', persona.pid );
     } else {
         persona = nBest[0];

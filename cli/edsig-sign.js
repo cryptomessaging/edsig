@@ -37,8 +37,8 @@ async function handleAction(filename,path) {
         console.log( 'Using persona:', options.persona );
 
     let pid = options.persona.pid;
-    let secrets = storage.loadPersonaSecrets(pid);
-    let keypair = edsig.keypairFromSecret( secrets.root.secret );
+    let secrets = storage.loadSecrets(pid);
+    let keypair = edsig.keypairFromSecret( secrets.master.secret );
 
     let file = fs.readFileSync( filename );
 

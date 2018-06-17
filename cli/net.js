@@ -72,8 +72,8 @@ async function putFile(pid,service,path,file,contentType,certificationPath,certi
     const url = new URL( path, controllerUrl );
     if( global.DEBUG ) console.log( 'Created', url, 'from', path, controllerUrl );
 
-    const secrets = storage.loadPersonaSecrets( pid );
-    const keypair = edsig.keypairFromSecret( secrets.root.secret );
+    const secrets = storage.loadSecrets( pid );
+    const keypair = edsig.keypairFromSecret( secrets.master.secret );
     let req = {
         body: file,
         method: 'POST',

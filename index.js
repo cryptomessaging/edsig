@@ -15,9 +15,11 @@ module.exports = {
     mergeCertificationHeaders: certification.mergeCertificationHeaders,
     verifyCertification: certification.verifyCertification,
 
-    // Utility
+    // Models
     Keypath: models.Keypath,
-    createPersona: util.createPersona,
+    Persona: models.Persona,
+
+    // Utility
     keypairFromSecret: util.keypairFromSecret,
     base64url: util.base64url,
     CodedError: util.CodedError,

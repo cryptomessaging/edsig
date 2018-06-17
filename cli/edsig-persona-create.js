@@ -31,8 +31,8 @@ async function handleAction(nickname) {
     if( nickname.length == 0 )
         throw new Error( 'Please provide a nickname' );
 
-    const {persona,secrets} = edsig.createPersona(nickname);
+    const {persona,keyring,secrets} = edsig.Persona.create(nickname);
     if( program.image )
         persona.images = [ path.basename(imagePath) ];
-    storage.savePersona(persona, secrets, program.image);
+    storage.savePersona(persona, keyring, secrets, program.image);
 }
