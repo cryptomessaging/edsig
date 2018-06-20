@@ -1,16 +1,11 @@
 #!/usr/bin/env node
 
 const fs = require('fs')
-const path = require('path')
 const mime = require('mime-types')
 
-const storage = require('./storage')
 const util = require('./util')
 const edsig = require('../index')
 const Options = require('./options')
-
-const HOME_DIR = require('os').homedir();
-const PERSONAS_DIR = path.join( HOME_DIR, '.cryptomessaging', 'personas' );
 
 let program = Options.setup( require('commander') )
 let acted;
@@ -31,14 +26,10 @@ async function handleAction(filename,path) {
     let options = new Options(program);
 
     if( !options.persona )
-        throw new Error( 'Please specify a persona with -p or -n to certify this file' );
+        throw new Error( 'Please specify a persona with -k or -n to certify this file' );
 
     if( global.VERBOSE )
         console.log( 'Using persona:', options.persona );
-
-    let pid = options.persona.pid;
-    let secrets = storage.loadSecrets(pid);
-    let keypair = edsig.keypairFromSecret( secrets.master.secret );
 
     let file = fs.readFileSync( filename );
 
@@ -46,6 +37,7 @@ async function handleAction(filename,path) {
     if( global.VERBOSE )
         console.log( 'Guessing content-type of', contentType, 'for file', filename );
 
-    let certificate = edsig.createContentCertificate(file,contentType,keypair,pid,path)
+    const keypath = options.keypath.toString();
+    let certificate = edsig.createContentCertificate(file,contentType,options.keypair,keypath,path)
     console.log( util.stringify( certificate ) );
 }

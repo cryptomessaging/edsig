@@ -44,16 +44,20 @@ async function getFile(url,service) {
  * @param {object} service - Service to publish to.
  */
 async function putPersonaFile(persona,service) {
+    const secrets = storage.loadSecrets( pid );
+    const keypair = edsig.keypairFromSecret( secrets.master.secret );
+
     let file = Buffer.from( util.stringify(persona) );
     const viewpath = 'personas/' + persona.pid + '/persona.json';
-    let result = await putFile( persona.pid, service, viewpath, file, 'application/json', viewpath );
+    let result = await putFile( keypair, persona.pid, service, viewpath, file, 'application/json', viewpath );
     console.log( 'Persona published to:', result.viewurl );
     return result;
 }
 
 /**
  * Push a file onto a service.
- * @param {string} pid - PID of persona sending file
+ * @param {Keypair} keypair
+ * @param {string} keypath
  * @param {object} service - OPTIONAL, the full service object from our local .cryptomessaging dir
  * @param {string} path - full url when no service, or relative path under the provided service
  * @param {Buffer} file - a Buffer containing the file
@@ -61,7 +65,7 @@ async function putPersonaFile(persona,service) {
  * @param {string} certificationPath - OPTIONAL partial path (or full url) used when creating content certification
  * @param {object} certification - OPTIONAL full ContentCertification object 
  */
-async function putFile(pid,service,path,file,contentType,certificationPath,certification) {
+async function putFile(keypair,keypath,service,path,file,contentType,certificationPath,certification) {
 
     // What is the base URL of the controller for this edge cache?
     // (Requires trailing slash)
@@ -72,8 +76,6 @@ async function putFile(pid,service,path,file,contentType,certificationPath,certi
     const url = new URL( path, controllerUrl );
     if( global.DEBUG ) console.log( 'Created', url, 'from', path, controllerUrl );
 
-    const secrets = storage.loadSecrets( pid );
-    const keypair = edsig.keypairFromSecret( secrets.master.secret );
     let req = {
         body: file,
         method: 'POST',
@@ -85,12 +87,12 @@ async function putFile(pid,service,path,file,contentType,certificationPath,certi
             date: new Date().toISOString()
         }
     };
-    edsig.addAuthorization( url.pathname, req, keypair );
+    edsig.addAuthorization( url.pathname, req, keypair, keypath );
 
     if( certification )
         edsig.mergeCertificationHeaders( certification, req );
     else
-        edsig.addCertificationHeaders( certificationPath || path, req.headers, req.body, keypair ); 
+        edsig.addCertificationHeaders( certificationPath || path, req.headers, req.body, keypair, keypath ); 
 
     // post request to server
     const options = {

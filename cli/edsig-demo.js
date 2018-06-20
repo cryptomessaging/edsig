@@ -5,12 +5,7 @@ const storage = require('./storage')
 const fs = require('fs')
 const path = require('path')
 const net = require('./net')
-const Options = require('./options')
 const util = require('./util')
-
-let program = Options.setup( require('commander') )
-program.parse(process.argv);
-let options = new Options(program);
 
 try {
     setup();

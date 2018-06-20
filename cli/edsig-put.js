@@ -10,9 +10,6 @@ const net = require('./net')
 const edsig = require('../index')
 const Options = require('./options')
 
-const HOME_DIR = require('os').homedir();
-const PERSONAS_DIR = path.join( HOME_DIR, '.cryptomessaging', 'personas' );
-
 let program = Options.setup( require('commander') )
 let acted;
 program
@@ -53,6 +50,7 @@ async function handleAction(filename,url) {
             console.log( 'Guessing content-type of', contentType, 'for file', filename );
     }
     
-    let result = await net.putFile(pid,options.service,path,file,contentType,certificationPath,certification);
+    const keypath = options.keypath.toString();
+    let result = await net.putFile(options.keypair,keypath,options.service,path,file,contentType,certificationPath,certification);
     console.log( 'Posted to:', result.viewurl );
 }

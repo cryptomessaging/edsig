@@ -29,7 +29,7 @@ function addContentHeaders(headers,body) {
     let length = body ? body.length : 0;
     let hash = hashBody( body );
 
-    if( global.DEBUG ) {
+    if( global.VERBOSE ) {
         const declaredHash = headers['x-content-hash'];
         if( declaredHash && declaredHash != hash )
             console.log( 'WARNING: x-content-hash header value', declaredHash, 'doesn\'t match actual value', hash );

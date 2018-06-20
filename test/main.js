@@ -19,6 +19,114 @@ const third_party_keypair = edsig.keypairFromSecret( 'QMy-kk6iza68y0UiJosE96xRfJ
 const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) );
 
 //
+// Keypath parsing
+//
+
+        // - 4fwe2er@foo.com = use master key
+        // - 4rfg: = select persona starting with 4rfg but use subkey
+        // - 34rerfwf:sfwefw@foo.com = use selected subkey
+        // - @foo.com,bar.com = use master key of named persona, hinting at two persona servers
+        // - :@foo.com = use subkey from named persona
+
+(function() {
+    [
+        ['4fwe2er@foo.com',{
+            "hosts": [
+                "foo.com"
+            ],
+            "keys": [
+                "4fwe2er"
+            ]
+        }],
+        ['4rfg:',{
+            "hosts": [],
+            "keys": [
+                "4rfg",
+                null
+            ]
+        }],
+        ['34rerfwf:sfwefw@foo.com',{
+            "hosts": [
+                "foo.com"
+            ],
+            "keys": [
+                "34rerfwf",
+                "sfwefw"
+            ]
+        }],
+        [' 34rerfwf : sfwefw @ foo.com ',{
+            "hosts": [
+                "foo.com"
+            ],
+            "keys": [
+                "34rerfwf",
+                "sfwefw"
+            ]
+        }],
+        ['@foo.com,bar.com',{
+            "hosts": [
+                "foo.com",
+                "bar.com"
+            ],
+            "keys": [
+                null
+            ]
+        }],
+        ['@',{
+            "hosts": [
+                null
+            ],
+            "keys": [
+                null
+            ]
+        }],
+        [':',{
+            "hosts": [],
+            "keys": [
+                null,
+                null
+            ]
+        }],
+        [':@',{
+            "hosts": [
+                null
+            ],
+            "keys": [
+                null,
+                null
+            ]
+        }],
+        [':@foo.com',{
+            "hosts": [
+                "foo.com"
+            ],
+            "keys": [
+                null,
+                null
+            ]
+        }],
+        [':435fd',{
+            "hosts": [],
+            "keys": [
+                null,
+                "435fd"
+            ]
+        }],
+        [null,{
+            "hosts": [],
+            "keys": [
+                null,
+                null
+            ]
+        }]
+    ].forEach( pair => {
+        let keypath = new edsig.Keypath( pair[0] );
+        console.log( 'Testing Keypath', pair[0], '=>', keypath.toString() );
+        assert.deepEqual(keypath,pair[1],'Keypath does not match expected result, value is: ' + util.stringify(keypath) );
+    });
+})();
+
+//
 // SHA3 hashing test
 //
 

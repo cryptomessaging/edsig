@@ -100,15 +100,28 @@ exports.Persona = class Persona {
     }
 }
 
+function cleanArray(arr) {
+    for( let i = 0; i < arr.length; i++ ) {
+        let v = arr[i];
+        if( v )
+            v = v.trim();
+        arr[i] = v || null;
+    }
+
+    return arr;
+}
+
 /**
  * Encapsulates a Cryptomessaging keypath of the form <masterkey>[:subkey][@host1[,host2[...,hostN]]]
  */
 exports.Keypath = class Keypath {
 
-    constructor(keypath) {
+    constructor(keypath = ':') {
+        if( !keypath )
+            keypath=':';
         const tokens = keypath.split('@');
-        this.hosts = tokens.length > 1 ? tokens[1].split(',') : [];
-        this.keys = tokens[0].split(':');
+        this.hosts = tokens.length > 1 ? cleanArray( tokens[1].split(',') ) : [];
+        this.keys = cleanArray( tokens[0].split(':') );
     }
 
     /**
