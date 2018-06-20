@@ -44,7 +44,8 @@ async function getFile(url,service) {
  * @param {object} service - Service to publish to.
  */
 async function putPersonaFile(persona,service) {
-    const secrets = storage.loadSecrets( pid );
+    // For the persona, always use the master key?
+    const secrets = storage.loadSecrets( persona.pid );
     const keypair = edsig.keypairFromSecret( secrets.master.secret );
 
     let file = Buffer.from( util.stringify(persona) );
