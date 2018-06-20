@@ -4,7 +4,7 @@ Edwards-curve based cryptographic HTTP authorization and certification SDK for N
 
 The SDK can be used to build cryptomessaging clients or services that authenticate HTTP requests using public key based identities created on a smartphone or laptop.  Additionally the library supports certifying content using the same public keys, so that content can be distributed using ordinary web servers and edge caching networks.
 
-A command line interface is included to help programmers quickly learn how EdSig works, and for interacting with EdSig based services.  A sample persona service is available at [https://personas.cryptomessaging.org](https://personas.cryptomessaging.org)
+A command line interface is included to help programmers quickly learn how EdSig works, and for interacting with EdSig based services.  A reference persona service is available at [https://personas.cryptomessaging.org](https://personas.cryptomessaging.org)
 
 
 ## Quickstart

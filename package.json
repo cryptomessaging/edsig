@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "test": "node test/main",
-        "docs": "jsdoc2md core/authorization.js core/certification.js > docs/api.md"
+        "docs": "jsdoc2md core/authorization.js core/certification.js core/models.js > docs/api.md"
     },
     "bin": {
         "edsig": "./cli/index.js"
