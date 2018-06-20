@@ -8,6 +8,7 @@ module.exports = {
     getFile: getFile,
     putFile: putFile,
     putPersonaFile: putPersonaFile,
+    putKeyring: putKeyring,
     httpRequest: httpRequest,
     fetchServiceInfo: fetchServiceInfo,
     determineHost: determineHost,
@@ -48,11 +49,42 @@ async function putPersonaFile(persona,service) {
     const secrets = storage.loadSecrets( persona.pid );
     const keypair = edsig.keypairFromSecret( secrets.master.secret );
 
-    let file = Buffer.from( util.stringify(persona) );
+    const file = Buffer.from( util.stringify(persona) );
     const viewpath = 'personas/' + persona.pid + '/persona.json';
-    let result = await putFile( keypair, persona.pid, service, viewpath, file, 'application/json', viewpath );
+    const result = await putFile( keypair, persona.pid, service, viewpath, file, 'application/json', viewpath );
     console.log( 'Persona published to:', result.viewurl );
     return result;
+}
+
+/**
+ * Publish a persona keyring to a service.
+ * @param {string} pid - id of persona to publish
+ * @param {object} service - Service to publish to.
+ */
+async function putKeyring(pid,service) {
+    const secrets = storage.loadSecrets( pid );
+    
+    // use master key for signing
+    const keypair = edsig.keypairFromSecret( secrets.master.secret );
+
+    // find each subkey and upload
+    let promises = [];
+    Object.keys( secrets.subkeys ).forEach( id => {
+        let subkey = secrets.subkeys[id];
+        delete subkey.secret;
+
+        // do them in parallel
+        promises.push( putSubkey(pid,subkey,keypair,service) );
+    });
+
+    await Promise.all( promises );
+}
+
+async function putSubkey(pid,subkey,keypair,service) {
+    const viewpath = 'personas/' + pid + '/keyring/subkey(' + subkey.id + ').json';
+    const file = Buffer.from( util.stringify(subkey) );
+    const result = await putFile( keypair, pid, service, viewpath, file, 'application/json', viewpath );
+    console.log( 'Keyring published to:', result.viewurl );   
 }
 
 /**

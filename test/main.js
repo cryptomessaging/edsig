@@ -111,13 +111,6 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
                 null,
                 "435fd"
             ]
-        }],
-        [null,{
-            "hosts": [],
-            "keys": [
-                null,
-                null
-            ]
         }]
     ].forEach( pair => {
         let keypath = new edsig.Keypath( pair[0] );

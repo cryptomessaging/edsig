@@ -145,13 +145,13 @@ function loadPersona(pid) {
 }
 
 function loadSecrets(pid) {
-    const filepath = path.join( PERSONAS_DIR, pid, 'secrets.json' );
+    const filepath = path.join( PERSONAS_DIR, pid, 'keyring', 'secrets.json' );
     let json = fs.readFileSync( filepath );
     return JSON.parse( json );
 }
 
 function loadSubkey(pid,subkeyId) {
-    const filepath = path.join( PERSONAS_DIR, pid, 'keyring', subkeyId + '.json' );
+    const filepath = path.join( PERSONAS_DIR, pid, 'keyring', 'subkey(' + subkeyId + ').json' );
     let json = fs.readFileSync( filepath );
     return JSON.parse( json );
 }
@@ -169,10 +169,10 @@ function savePersona(persona,keyring,secrets,imagePath) {
 
     // write pretty JSON
     saveJson( persona, mypersonadir, 'persona.json', 'persona' );
-    saveJson( secrets, mypersonadir, 'secrets.json', 'secrets' );
+    saveJson( secrets, keyringdir, 'secrets.json', 'secrets' );
     if( keyring ) {
         keyring.forEach( keybase => {
-            saveJson( keybase, keyringdir, keybase.id + '.json', 'keyring ' + keybase.id );
+            saveJson( keybase, keyringdir, 'subkey(' + keybase.id + ').json', 'keyring ' + keybase.id );
         });
     }
 

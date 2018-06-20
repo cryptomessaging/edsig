@@ -23,8 +23,10 @@ if( !acted )
 async function handleAction(viewurl) {
     let options = new Options(program);
     let service = await recordService(viewurl);
-    if( options.persona )
-        await net.putPersonaFile(options.persona,service);
+    if( options.persona ) {
+        await net.putPersonaFile( options.persona, service );
+        await net.putKeyring( options.persona.pid, service );
+    }
 }
 
 /**
