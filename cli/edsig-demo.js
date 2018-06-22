@@ -30,10 +30,10 @@ function setup() {
         let created = edsig.Persona.create('Satoshi');
         persona = created.persona;
         storage.savePersona( persona, created.keyring, created.secrets );
-        console.log( '- Created new persona', persona.nickname,'with pid', persona.pid );
+        console.log( '- Created new persona', persona.nickname, 'with pid', persona.pid );
     } else {
         persona = nBest[0];
-        console.log( '- Using existing persona', persona.nickname,'with pid', persona.pid );
+        console.log( '- Using existing persona', persona.nickname, 'with pid', persona.pid );
     }
 
     // copy sample files into ~/tmp 
