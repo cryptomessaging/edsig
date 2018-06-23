@@ -1,5 +1,5 @@
 const storage = require('./storage')
-const edsig = require('../index')
+const { Keypath, keypairFromSecret } = require('../index')()
 
 /**
  * Handle common program options.
@@ -20,7 +20,7 @@ module.exports = class Options {
         // - 34rerfwf:sfwefw@foo.com = use selected subkey
         // - @foo.com,bar.com = use master key of named persona, hinting at two persona servers
         // - :@foo.com = use a valid subkey from named persona
-        this.keypath = new edsig.Keypath( program.keypath );
+        this.keypath = new Keypath( program.keypath );
 
         // if we have a nickname, or the master key of the keypath, load the persona
         if( program.nickname )
@@ -44,7 +44,7 @@ module.exports = class Options {
 
             if( this.keypath.keys.length == 1 )
                 // use master key/pid
-                this.keypair = edsig.keypairFromSecret( secrets.master.secret );
+                this.keypair = keypairFromSecret( secrets.master.secret );
             else {
                 // use subkey
                 const id = this.keypath.keys[1];
@@ -55,7 +55,7 @@ module.exports = class Options {
                     keybase = findBestValidSubkey( secrets.subkeys );
 
                 this.keypath.keys[1] = keybase.id;
-                this.keypair = edsig.keypairFromSecret( keybase.secret );
+                this.keypair = keypairFromSecret( keybase.secret );
             }
         }
     }

@@ -52,9 +52,12 @@ function setup() {
         + CRLF + '  $ edsig join https://personas.cryptomessaging.org -n satoshi'
         + CRLF + CRLF + 'Add a self-certified diploma to your resume and fetch it back:'
         + CRLF + '  $ edsig put college-diploma.jpg resume/college-diploma.jpg -s alpha -n satoshi'
-        + CRLF + '  $ edsig get -s alpha personas/' + persona.pid + '/resume/college-diploma.jpg diploma1.jpg --save-certificate diploma1.jpg.edcert -v'
+        + CRLF + '  $ edsig get -s alpha personas/' + persona.pid + '/resume/college-diploma.jpg diploma1.jpg -v'
         + CRLF + CRLF + 'Add a diploma certified by Nakamoto himself(!) to your resume and fetch it back:'
-        + CRLF + '  $ edsig put university-diploma.jpg resume/university-diploma.jpg -s alpha -n satoshi --certification university-diploma.jpg.edcert'
-        + CRLF + '  $ edsig get https://personas.cryptomessaging.org/personas/' + persona.pid + '/resume/university-diploma.jpg diploma2.jpg --save-certificate diploma2.jpg.edcert' );
+        + CRLF + '  $ edsig put university-diploma.jpg resume/university-diploma.jpg -s alpha -n satoshi --certification cert(university-diploma.jpg).json'
+        + CRLF + '  $ edsig get https://personas.cryptomessaging.org/personas/' + persona.pid + '/resume/university-diploma.jpg diploma2.jpg'
+        + CRLF + CRLF + 'Certify your college diploma locally, and verify the certification:'
+        + CRLF + '  $ edsig sign college-diploma.jpg -n sat > cert.json'
+        + CRLF + '  $ edsig verify college-diploma.jpg cert.json -v' );
 }
 

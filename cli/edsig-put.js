@@ -14,7 +14,7 @@ let program = Options.setup( require('commander') )
 let acted;
 program
     .arguments('<filename> <url>')
-    .option('--certification <filepath>', 'An .edcert certification file')
+    .option('--certification <filepath>', 'A certification file')
     .action(function(filename,url) {
         acted = true;
         handleAction(filename,url).catch(err => {

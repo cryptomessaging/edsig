@@ -1,11 +1,15 @@
 const util = require('./util');
 const { Signature } = require('./models');
 
-module.exports = {
-    addCertificationHeaders: addCertificationHeaders,
-    mergeCertificationHeaders: mergeCertificationHeaders,
-    createContentCertificate: createContentCertificate,
-    verifyCertification: verifyCertification
+module.exports = options => {
+    module.options = options;
+
+    return {
+        addCertificationHeaders: addCertificationHeaders,
+        mergeCertificationHeaders: mergeCertificationHeaders,
+        createContentCertificate: createContentCertificate,
+        verifyCertification: verifyCertification
+    }
 };
 
 /** 
@@ -47,7 +51,7 @@ function verifyCertification(path,req) {
         return null;
     }
 
-    // verify specific EdSig request headers and CRC32C of body (if present)
+    // verify specific EdSig request headers and SHA3-256 of body (if present)
     let success = certification.pubkey.verify(summaryBytes, certification.sighex);
     if( !success )
         throw new util.CodedError([4],'EdSig certification check failed' );
@@ -82,22 +86,6 @@ function createContentCertificate(file,contentType,keypair,keypath,contentPath) 
     addCertificationHeaders( contentPath, req.headers, req.body, keypair, keypath );
     return new ContentCertificate( keypath, req.headers );
 }
-
-/**
- * Modifies the req.headers by adding the x-certification header and other headers as necessary
- * @param {ContentCertification} certification - OPTIONAL either a contentPath, or a full ContentCertification object
- * @param {HttpRequest} req
- * @param {Keypair} keypair - an elliptic curve keypair
- * @param {string} keypath - OPTIONAL keypath as <pid>[:subkey][@host1[,host2[,hostN]].  When keypath is not provided, the keypair pid is used.
- *
-function addCertification( certification, req, keypair, keypath ) {
-    if( !certification )
-        addCertificationHeaders( null, req.headers, req.body, keypair, keypath );
-    else if( certification.contentPath )
-        addCertificationHeaders( certification.contentPath, req.headers, req.body, keypair, keypath ); 
-    else
-        mergeCertificationHeaders( certification, req ) 
-}*/
 
 /**
  * Create a certification header value.

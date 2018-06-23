@@ -1,11 +1,11 @@
 const util = require('./util');
 const { Signature } = require('./models');
 
-module.exports = {
+module.exports = options => ({
     createAuthorization: createAuthorization,
     addAuthorization: addAuthorization,
     verifyAuthorization: verifyAuthorization
-};
+});
 
 /** 
  * Authorization result from verifyRequestAuthorization()

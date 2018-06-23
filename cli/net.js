@@ -1,6 +1,7 @@
 const request = require('request')
 const { URL } = require('url') // Node 8!
-const edsig = require('../index')
+const keycheck = require('../core/keycheck')()
+const edsig = require('../index')()
 const util = require('./util')
 const storage = require('./storage')
 
@@ -16,8 +17,13 @@ module.exports = {
     normalizeServiceUrl: normalizeServiceUrl
 };
 
-// url - either full URL or relative path when service is provided
-// service - optional service to resolve relative urls with the view url
+/**
+ * Get a file and ensure the certification is valid.
+ * @param {string} url - either full URL or relative path when service is provided
+ * @param {object} service - optional service to resolve relative urls with the view url
+ * @return {headers,body,certified} On success.
+ * @throws {Error} on network or certification problems.
+ */
 async function getFile(url,service) {
     let options = {
         encoding: null
@@ -30,7 +36,10 @@ async function getFile(url,service) {
     }
 
     let {res,body} = await httpRequest(options);
-    let certified = edsig.verifyCertification(options.url,res);
+    let certified = edsig.verifyCertification(options.url,res); // make sure declared keys are verified
+
+    const host = new URL(options.url).host; // include persona service that content came from to check for subkey
+    await keycheck.checkKeypath( certified.keypath, [host] );
 
     return {
         headers: res.headers,
@@ -140,10 +149,12 @@ async function putFile(keypair,keypath,service,path,file,contentType,certificati
     return result;
 }
 
-// Promisified request()
-// options { url: ... }
-// .then( {res:, body:} )
-// throws Error when response status code NOT 200
+/**
+ * Promisified request()
+ * @param {object} options
+ * @return {Promise} returning url, res, and body properties.
+ * @throws Error when response status is not 200
+ */
 function httpRequest(options) {
     if( global.DEBUG )
         console.log( 'HTTP Request:', options );
