@@ -6,8 +6,7 @@ const mime = require('mime-types')
 
 const storage = require('./storage')
 const util = require('./util')
-const resolver = require('../core/resolver')
-const edsig = require('../index')(resolver)
+const edsig = require('../index')()
 const Options = require('./options')
 
 let program = Options.setup( require('commander') )
