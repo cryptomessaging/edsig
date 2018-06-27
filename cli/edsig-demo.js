@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const edsig = require('../index')
+const edsig = require('../index')()
 const storage = require('./storage')
 const fs = require('fs')
 const path = require('path')

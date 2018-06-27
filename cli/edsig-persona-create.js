@@ -2,7 +2,7 @@
 
 const path = require('path')
 const Options = require('./options')
-const edsig = require('../index')
+const edsig = require('../index')()
 const util = require('./util')
 const storage = require('./storage')
 

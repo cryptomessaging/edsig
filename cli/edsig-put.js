@@ -7,7 +7,7 @@ const mime = require('mime-types')
 
 const util = require('./util')
 const net = require('./net')
-const edsig = require('../index')
+const edsig = require('../index')()
 const Options = require('./options')
 
 let program = Options.setup( require('commander') )
