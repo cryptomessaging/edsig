@@ -20,7 +20,7 @@ module.exports = {
 //
 
 /**
- * Add the content-length and x-content-hash HTTP headers for the given body.
+ * Add the content-length and digest HTTP headers for the given body.
  * @param {object} headers
  * @param {Buffer} body
  * @private
@@ -30,16 +30,16 @@ function addContentHeaders(headers,body) {
     let hash = hashBody( body );
 
     if( global.VERBOSE ) {
-        const declaredHash = headers['x-content-hash'];
+        const declaredHash = headers['digest'];
         if( declaredHash && declaredHash != hash )
-            console.log( 'WARNING: x-content-hash header value', declaredHash, 'doesn\'t match actual value', hash );
+            console.log( 'WARNING: digest header value', declaredHash, 'doesn\'t match actual value', hash );
         let declaredLength = headers['content-length'];
         if( declaredLength && declaredLength != length )
             console.log( 'WARNING: content-length header value', declaredLength, 'doesn\'t match actual value', length );
     }
 
     headers['content-length'] = length;
-    headers['x-content-hash'] = hash;
+    headers['digest'] = hash;
 }
 
 /**
@@ -96,7 +96,7 @@ function toArrayBuffer(buf) {
 /**
  * Provides an HTTP ready representation of the CRC32C hash of the body.
  * @param {Buffer} body - Body can be a buffer or string, (or null!)
- * @return {string} usable for HTTP header 'x-content-hash' and including hashing algo used (i.e. 'SHA3-256')
+ * @return {string} usable for HTTP header 'digest' and including hashing algo used (i.e. 'SHA3-256=')
  * @private
  */
 function hashBody(body) {
@@ -105,7 +105,7 @@ function hashBody(body) {
     else if( typeof body === 'string' )
         body = Buffer.from( body );
     else if( body instanceof Buffer )
-        ;   // perfect that way it came!
+        ;   // perfect the way it came!
     else
         throw new CodedError([5],'Body is not a Buffer, String, or null - it\'s a ' + typeof body );
 
@@ -118,7 +118,7 @@ function hashBody(body) {
     if( global.DEBUG )
         console.log( 'jsSHA SHA3-256 hash of', body, 'in', duration + 'ms', 'is:', hash, 'base64url:', base64hash );
 
-    return 'SHA3-256 ' + base64hash;
+    return 'SHA3-256=' + base64hash;
 }
 
 //

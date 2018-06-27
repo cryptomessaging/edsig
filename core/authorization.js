@@ -13,7 +13,7 @@ module.exports = options => ({
 class AuthorizationResult {
     /**
      * Create an EdSig authorization result for the given pid.
-     * @param {Keypath} keypath - A Keypath with at least the root key that
+     * @param {Keypath} keypath - A Keypath with at least the master key/pid that
      *  signed the request.  Can be a simple pid, or a complex rootkey:subkey@host1,host2.
      */
     constructor(keypath) {
@@ -25,7 +25,7 @@ class AuthorizationResult {
 /** 
  * Verify an HTTP request that was signed using an EdSig authorization header.
  * @param {string} path - pathname of request including query string.  I.e. http://mydomain.com/pathname?querystring
- * @req {HttpRequest} req - Node like Request structure containing method, headers, and body proeprties
+ * @req {HttpRequest} req - Node like Request structure containing method, headers, and body properties
  * @return {AuthorizationResult} - when authorization succeeds, or null when no authorization header presented
  * @throws Error when authorization header is present, but signature check fails
  */
@@ -35,7 +35,7 @@ function verifyAuthorization(path,req) {
     if( !auth )
         return;  // it's ok!
 
-    // make sure content-length and x-content-hash match body
+    // make sure content-length and digest match body
     util.addContentHeaders( req.headers, req.body );
 
     // verify specific EdSig request headers
@@ -53,23 +53,22 @@ function verifyAuthorization(path,req) {
 
 /**
  * Convert HTTP request method, path, and certain headers to a Buffer. Format of
- *  Buffer is "METHOD path\nheader1value\nheader2value\n...headerNvalue"
+ *  Buffer is "METHOD path\nheadername1: value\nheadername2: value\n...headernameN: value"
  * @param {string} method - HTTP method, i.e. GET, POST, PUT
  * @param {string} path - pathname, including query string if any.
  * @param {object} headers - Simple map of header names to values.  All header names must be lower case.
- * @return {Buffer} Summary string of request, as "METHOD path\nheader1value\nheader2value\n...headerNvalue"
+ * @return {Buffer} Summary string of request, as "METHOD path\nheadername1: value\nheadername2: value\n...headernameN: value"
  * @private
  */
 function reqSummaryToBytes(method,path,headers) {
     const SIGNATURE_HEADERS = [
         'content-length',
-        'content-type',
         'date',
-        'host',
-        'x-content-hash' ];     // order is important!
+        'digest',
+        'host' ];     // order is important!
     let message = method + ' ' + path;
     SIGNATURE_HEADERS.forEach(name => {
-        let value = headers[name] || '';
+        let value = name + ': ' + (headers[name] || '');
         message += '\n' + value;
     });
 

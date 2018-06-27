@@ -1,4 +1,4 @@
-const edsig = require('../index')
+const edsig = require('../index')()
 const { randomBytes } = require('crypto')
 const EdDSA = require('elliptic').eddsa
 const ec = new EdDSA('ed25519')
@@ -126,14 +126,14 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
 (function() {
     // simple text
     let hash = edsig.hashBody( 'Hello World!' );
-    let expected = 'SHA3-256 0OR0hrv0wWrKwm-LZTWSlzwTYpCfkCYodwifnIpFNq8';
+    let expected = 'SHA3-256=0OR0hrv0wWrKwm-LZTWSlzwTYpCfkCYodwifnIpFNq8';
     assert.equal(hash,expected,'SHA3 hash did not match expected result, hash is: ' + hash );
 
     // big buffer
     let buffer = Buffer.allocUnsafe(1000000);   // 1MB
     buffer.fill('hello! ');
     hash = edsig.hashBody( buffer );
-    expected = 'SHA3-256 _W7Zt0IaFFvHUt7lRPk7IsBO6yofhfNAdflvmHV-_KQ';
+    expected = 'SHA3-256=_W7Zt0IaFFvHUt7lRPk7IsBO6yofhfNAdflvmHV-_KQ';
     assert.equal(hash,expected,'SHA3 hash did not match expected result, hash is: ' + hash );
 })();
 
@@ -210,11 +210,11 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
     let {path,contentPath,req} = createRequest();
     edsig.addAuthorization( path, req, root_keypair );
     let actual = req.headers.authorization;
-    let expected = 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw;sig=QyR4DQ2a0Idyhg4jgd3lXYC_KeVdQX8TgXoGrj8-QQkuDeNi-kJvX8DwxA-YHkf4czmEN0wC5wuEHpm8KAGvDw';  
+    let expected = 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw;sig=g_DX-oCbxx3Ysb-wo7VvkC085yGlVWWmjRzsSDdc9sXVwcXvhRhbv_vgnW8vPi2I3f01c3Qz7u8MGoK4qPAbCA';  
     assert.equal(actual,expected,'Authorization header is incorrect, value is', actual );
 
     edsig.addCertificationHeaders( contentPath, req.headers, req.body, root_keypair );
-    expected = 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw;sig=kBwP4kWdJ_Tdh75tfq5Abu9haY8NKNS30Mw97eUJzj1PNuPBwl3DtYiMTl8LB6fr_D2O_rgosiKMKGNasDdlAw';
+    expected = 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw;sig=bTMxLSkrrHl4Gw-GywvTWP4aOSXsgictnDysbfh7YmCoWPhEiksDGGfxVrlImNE0l0JnnTAvVZyYfcdlTDDJDA';
     actual = req.headers['x-certification'];
     assert.equal(actual,expected,'Certification header did not match expected result, header is: ' + actual );
 
@@ -235,11 +235,10 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
         type: 'edsig',
         keypath: 'ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw',
         headers: {
-            'x-certification': 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw;sig=kBwP4kWdJ_Tdh75tfq5Abu9haY8NKNS30Mw97eUJzj1PNuPBwl3DtYiMTl8LB6fr_D2O_rgosiKMKGNasDdlAw',
             'content-length': 12,
-            'content-type': 'application/json',
+            'digest': 'SHA3-256=1uqPmh8i4SmOWpUGvQZvI8xWAB9dNlgjRKYoZJ31Oug',
+            'x-certification': 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw;sig=bTMxLSkrrHl4Gw-GywvTWP4aOSXsgictnDysbfh7YmCoWPhEiksDGGfxVrlImNE0l0JnnTAvVZyYfcdlTDDJDA',
             'x-content-created': '1967-12-13T00:00:00.000Z',
-            'x-content-hash': 'SHA3-256 1uqPmh8i4SmOWpUGvQZvI8xWAB9dNlgjRKYoZJ31Oug',
             'x-content-path': 'personas/ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw/persona.json'
         }
     };
@@ -253,10 +252,9 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
 
     [
         ['content-length','100'],
-        ['content-type','text/html'],
         ['date',new Date('2010-1-3').toISOString()],
         ['host','danger.com'],
-        ['x-content-hash','CRC32C 4fec3345']
+        ['digest','CRC32C 4fec3345']
     ].forEach( item => {
         alterHeader(item[0],item[1]);
     });
@@ -285,7 +283,7 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
     let keypath = pid + ':' + subkey + '@startlinglabs.com,localhost:3030';
     edsig.addAuthorization( path, req, sub_keypair, keypath );
     let actual = req.headers.authorization;
-    let expected = 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw:GxsBiN4njPNsgg1K_HotDnabcJaXuX8Re_Mee8lIiZ4@startlinglabs.com,localhost:3030;sig=chki4jw1lURoVKsT7PhXE9N_0M3C0_v-Za5yY7tgBbrBz7duxMxTzeDk8k7v8tejYkHmtwjvOfhDJA4W9FfJCw';  
+    let expected = 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw:GxsBiN4njPNsgg1K_HotDnabcJaXuX8Re_Mee8lIiZ4@startlinglabs.com,localhost:3030;sig=qyztdholruPwrnuZqaVPE1If12cvWyNnJ0uq-dwVhH5YbqIsthc6Iu2C4bQl6krdwpaQTyrYM2XNmdBLYjGACw';  
     assert.equal(actual,expected,'Subkey authorization header is incorrect, with value of: ' + actual );
 
     // Verify request
@@ -311,11 +309,11 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
     let keypath = pid + ':' + subkey + '@startlinglabs.com,localhost:3030';
     edsig.addAuthorization( path, req, sub_keypair, keypath );
     let actual = req.headers.authorization;
-    let expected = 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw:GxsBiN4njPNsgg1K_HotDnabcJaXuX8Re_Mee8lIiZ4@startlinglabs.com,localhost:3030;sig=chki4jw1lURoVKsT7PhXE9N_0M3C0_v-Za5yY7tgBbrBz7duxMxTzeDk8k7v8tejYkHmtwjvOfhDJA4W9FfJCw';  
+    let expected = 'EdSig kp=ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw:GxsBiN4njPNsgg1K_HotDnabcJaXuX8Re_Mee8lIiZ4@startlinglabs.com,localhost:3030;sig=qyztdholruPwrnuZqaVPE1If12cvWyNnJ0uq-dwVhH5YbqIsthc6Iu2C4bQl6krdwpaQTyrYM2XNmdBLYjGACw';  
     assert.equal(actual,expected,'Subkey authorization header is incorrect, value is: ' + actual );
 
     edsig.addCertificationHeaders( contentPath, req.headers, req.body, third_party_keypair );
-    expected = 'EdSig kp=pUL9YNHQ39odztm9aEqjBbCwRAn0aSD3jQZAOJi8jZA;sig=VqTJNwffldPx7y5DbV-w5KTruqK91vjf7O4-EHprdYzjo_N_-ak_xOtWMMGTB3qPuPCOpvzDRtE0hGSRZcOgCQ';
+    expected = 'EdSig kp=pUL9YNHQ39odztm9aEqjBbCwRAn0aSD3jQZAOJi8jZA;sig=6aIADYdM9iti4piSwFJrd8RMIi0Fmw8jD8k0Bdp1LdG_wHPLVACahqlTZj3ILYImouI7G_d477lDsUklKsI4BQ';
     actual = req.headers['x-certification'];
     assert.equal(actual,expected,'Certification header did not match, value is: ' + actual );
 
@@ -340,15 +338,14 @@ const third_party_pid = edsig.base64url( Buffer.from( sub_keypair.getPublic() ) 
         type: 'edsig',
         keypath: 'pUL9YNHQ39odztm9aEqjBbCwRAn0aSD3jQZAOJi8jZA',
         headers: {
-            'x-certification': 'EdSig kp=pUL9YNHQ39odztm9aEqjBbCwRAn0aSD3jQZAOJi8jZA;sig=VqTJNwffldPx7y5DbV-w5KTruqK91vjf7O4-EHprdYzjo_N_-ak_xOtWMMGTB3qPuPCOpvzDRtE0hGSRZcOgCQ',
             'content-length': 12,
-            'content-type': 'application/json',
+            'digest': 'SHA3-256=1uqPmh8i4SmOWpUGvQZvI8xWAB9dNlgjRKYoZJ31Oug',
+            'x-certification': 'EdSig kp=pUL9YNHQ39odztm9aEqjBbCwRAn0aSD3jQZAOJi8jZA;sig=6aIADYdM9iti4piSwFJrd8RMIi0Fmw8jD8k0Bdp1LdG_wHPLVACahqlTZj3ILYImouI7G_d477lDsUklKsI4BQ',
             'x-content-created': '1967-12-13T00:00:00.000Z',
-            'x-content-hash': 'SHA3-256 1uqPmh8i4SmOWpUGvQZvI8xWAB9dNlgjRKYoZJ31Oug',
             'x-content-path': 'personas/ziSFUObFVISG_0qaSh58dy0e-5p1FsCtQ-Me48_1vAw/persona.json'
         }
     };
-    assert.deepEqual( certificate, expected, 'Third party cerification failed, value is: ' + certificate );
+    assert.deepEqual( certificate, expected, 'Third party cerification failed, value is: ' + JSON.stringify(certificate,null,4) );
 })();
 
 //

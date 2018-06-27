@@ -129,10 +129,8 @@ function mergeCertificationHeaders( certification, req ) {
     // make sure certificate headers match the body
     if( req.headers['content-length'] != certification.headers['content-length'] )
         throw new Error( 'File content length does not match supplied Certification' );
-    if( req.headers['content-type'] != certification.headers['content-type'] )
-        throw new Error( 'File content type does not match supplied Certification' );
-    if( req.headers['x-content-hash'] != certification.headers['x-content-hash'] )
-        throw new Error( 'File content hash does not match supplied Certification' );
+    if( req.headers['digest'] != certification.headers['digest'] )
+        throw new Error( 'File digest does not match supplied Certification' );
 
     req.headers['x-content-created'] = certification.headers['x-content-created'];
     req.headers['x-content-path'] = certification.headers['x-content-path']; 
@@ -144,21 +142,20 @@ function mergeCertificationHeaders( certification, req ) {
 
 /**
  * Convert the headers and body to a content summary string that can be signed or verified.  The
- * following headers are used for the summary: content-length, content-type, x-created,
- * x-content-hash, and x-content-path.
+ * following headers are used for the summary: content-length, digest, x-content-created,
+ * and x-content-path.
  * @param {object} headers
  * @param {Buffer} body
- * @return {Buufer} of the form "header1value\nheader2value\n...headerNvalue"  (NOTE: NO trailing \n)
+ * @return {Buufer} of the form "headername1: value\nheadername2: value\n...headernameN: value"  (NOTE: NO trailing \n)
  * @private
  */
 function contentSummaryToBytes(headers,body) {
     const signHeaders = [
         //'content-length',
-        'content-type',
+        'digest',
         'x-content-created',
-        'x-content-hash',
         'x-content-path' ];     // order is important!
-    let message = headers['content-length'];
+    let message = 'content-length: ' + headers['content-length'];
     signHeaders.forEach(name => {
         let value = headers[name] || '';
         message += '\n' + value;
@@ -169,11 +166,10 @@ function contentSummaryToBytes(headers,body) {
 }
 
 const CONTENT_SIGNATURE_HEADERS = [
-        'x-certification',
         'content-length',
-        'content-type',
+        'digest',
+        'x-certification',
         'x-content-created',
-        'x-content-hash',
         'x-content-path' ];
 
 function filter(headers) {
