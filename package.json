@@ -18,13 +18,13 @@
     "author": "Mike Prince",
     "license": "GPL-3.0-or-later",
     "dependencies": {
-        "commander": "^2.15.1",
-        "elliptic": "^6.4.0",
+        "elliptic": "^6.5.1",
         "jssha": "^2.3.1",
-        "mime-types": "^2.1.18",
-        "request": "^2.86.0"
+        "mime-types": "^2.1.24",
+        "request": "^2.88.0"
     },
     "devDependencies": {
-        "jsdoc-to-markdown": "^4.0.1"
+        "commander": "^2.20.3",
+        "jsdoc-to-markdown": "^5.0.2"
     }
 }
